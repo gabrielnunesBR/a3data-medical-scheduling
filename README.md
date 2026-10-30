@@ -57,3 +57,50 @@ Estrutura inicial em desenvolvimento.
 
 As regras de negócio, a persistência e os testes
 serão documentados conforme forem implementados.
+
+
+## Banco de dados
+
+O projeto utiliza PostgreSQL 17, executado localmente
+com Docker Compose.
+
+### Configuração
+
+Na raiz do repositório:
+
+```bash
+cp .env.example .env
+```
+
+Defina uma senha local em `POSTGRES_PASSWORD`.
+
+### Inicialização
+
+```bash
+docker compose up -d db
+```
+
+### Verificar o estado
+
+```bash
+docker compose ps
+```
+
+### Encerrar
+
+```bash
+docker compose down
+```
+
+O volume persistente é preservado ao encerrar
+os containers com `docker compose down`.
+
+### Configurações locais
+
+- Host: `localhost`
+- Porta padrão publicada: `5433`
+- Database: `medical_scheduling`
+- Usuário: `medical_app`
+
+As credenciais são configuradas no arquivo `.env`,
+que não deve ser versionado.
