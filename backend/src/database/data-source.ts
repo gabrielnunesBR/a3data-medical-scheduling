@@ -7,6 +7,8 @@ import { DataSource } from 'typeorm';
 import { envSchema } from '../config/env.schema.js';
 import { InitialSchema1793400000000 } from './migrations/1793400000000-InitialSchema.js';
 
+import { Exam } from '../modules/exams/entities/exam.entity.js';
+
 loadEnv({
   path: resolve(process.cwd(), '../.env'),
 });
@@ -28,4 +30,6 @@ export const migrationDataSource = new DataSource({
   migrationsRun: false,
 
   logging: ['error'],
+
+  entities: [Exam],
 });

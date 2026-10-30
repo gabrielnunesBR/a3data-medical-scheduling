@@ -131,3 +131,17 @@ Testes de integração (requerem PostgreSQL):
 ### Compilação
 
     npm run build --workspace=backend
+
+
+### Importação do catálogo de exames
+
+Após executar as migrations:
+
+    npm run seed:exams --workspace=backend
+
+O comando importa os exames a partir do arquivo
+`challenge/dados/exames.csv`.
+
+O seed preserva os IDs originais e pode ser
+executado novamente sem duplicar ou sobrescrever
+registros existentes.
