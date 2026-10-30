@@ -1,10 +1,10 @@
+
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { AppController } from './app.controller.js';
-import { AppService } from './app.service.js';
 import { envSchema } from './config/env.schema.js';
+import { ExamsModule } from './modules/exams/exams.module.js';
 
 @Module({
   imports: [
@@ -33,8 +33,8 @@ import { envSchema } from './config/env.schema.js';
         retryDelay: 1000,
       }),
     }),
+
+    ExamsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
