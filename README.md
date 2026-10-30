@@ -104,3 +104,30 @@ os containers com `docker compose down`.
 
 As credenciais são configuradas no arquivo `.env`,
 que não deve ser versionado.
+
+
+## Backend e persistência
+
+A API utiliza NestJS, TypeORM e PostgreSQL.
+
+As configurações de conexão são fornecidas por
+variáveis de ambiente e validadas com Zod.
+
+O TypeORM está configurado com sincronização
+automática desabilitada. A evolução do schema
+será controlada por migrations.
+
+### Testes do backend
+
+Testes unitários:
+
+    npm run test --workspace=backend -- --run
+
+Testes de integração (requerem PostgreSQL):
+
+    docker compose up -d db
+    npm run test:e2e --workspace=backend -- --run
+
+### Compilação
+
+    npm run build --workspace=backend
