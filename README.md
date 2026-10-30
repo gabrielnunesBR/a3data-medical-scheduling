@@ -145,3 +145,19 @@ O comando importa os exames a partir do arquivo
 O seed preserva os IDs originais e pode ser
 executado novamente sem duplicar ou sobrescrever
 registros existentes.
+
+
+### Importação de médicos e agendas
+
+Após executar as migrations:
+
+    npm run seed:doctors --workspace=backend
+
+O comando importa os cinco médicos e seus 36 turnos
+semanais, conforme o arquivo `challenge/dados/medicos.md`.
+
+As agendas são representadas por dados estruturados
+em TypeScript.
+
+O seed é transacional e idempotente, não duplicando
+nem sobrescrevendo registros existentes.

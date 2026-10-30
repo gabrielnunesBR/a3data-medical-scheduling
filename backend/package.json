@@ -23,7 +23,8 @@
     "migration:run": "npm run build && typeorm migration:run -d dist/database/data-source.js",
     "migration:revert": "npm run build && typeorm migration:revert -d dist/database/data-source.js",
     "migration:show": "npm run build && typeorm migration:show -d dist/database/data-source.js",
-    "seed:exams": "npm run build && node dist/database/seeds/exams.seed.js"
+    "seed:exams": "npm run build && node dist/database/seeds/exams.seed.js",
+    "seed:doctors": "npm run build && node dist/database/seeds/doctors.seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
