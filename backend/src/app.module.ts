@@ -4,10 +4,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule, minutes } from '@nestjs/throttler';
 
 import { envSchema } from './config/env.schema.js';
-import { ExamsModule } from './modules/exams/exams.module.js';
-import { DoctorsModule } from './modules/doctors/doctors.module.js';
-import { AvailabilityModule } from './modules/availability/availability.module.js';
 import { AppointmentsModule } from './modules/appointments/appointments.module.js';
+import { AvailabilityModule } from './modules/availability/availability.module.js';
+import { DoctorsModule } from './modules/doctors/doctors.module.js';
+import { ExamsModule } from './modules/exams/exams.module.js';
+import { HealthModule } from './modules/health/health.module.js';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module.j
     DoctorsModule,
     AvailabilityModule,
     AppointmentsModule,
+    HealthModule,
   ],
 })
 export class AppModule {}
