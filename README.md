@@ -266,3 +266,44 @@ medical_scheduling_test.
 
 Nenhum teste E2E deve modificar os registros do
 banco de desenvolvimento.
+
+
+### Criar agendamento
+
+POST /api/appointments
+
+Exemplo de corpo JSON:
+
+{
+  "patientName": "João Silva",
+  "examId": 17,
+  "doctorId": 1,
+  "startAt": "2030-01-07T09:20:00-03:00"
+}
+
+O backend calcula automaticamente o término
+do agendamento, considerando a duração do exame.
+
+Validações:
+- Exame e médico existentes.
+- Horário não pode estar no passado.
+- O médico precisa atender na data e no turno.
+- O início deve pertencer à grade do exame.
+- Não pode existir sobreposição com outra reserva.
+
+Respostas:
+- 201: agendamento criado.
+- 400: dados de entrada inválidos.
+- 404: médico ou exame inexistente.
+- 409: horário ocupado.
+- 422: horário fora das regras de agendamento.
+
+### Testes E2E de agendamento
+
+Executar:
+
+    npm run test:e2e --workspace=backend -- --run
+
+Os testes utilizam o banco isolado
+medical_scheduling_test e removem os agendamentos
+criados durante sua execução.
