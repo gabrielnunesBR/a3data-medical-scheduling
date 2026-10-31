@@ -1,22 +1,45 @@
-:root {
-  font-family: Inter, system-ui, sans-serif;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand: #0f766e;
+  --color-brand-strong: #115e59;
+  --color-brand-soft: #ccfbf1;
+  --color-brand-subtle: #f0fdfa;
+  --color-brand-ink: #134e4a;
+
+  --color-canvas: #f6f9fc;
+  --color-surface: #ffffff;
+  --color-ink: #172b4d;
+  --color-muted-ink: #475569;
+  --color-line: #d9e2ec;
+
+  --color-danger: #b42318;
+  --color-success: #166534;
+  --color-focus: #2563eb;
 }
 
-* {
-  box-sizing: border-box;
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  margin: 0;
   min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
 }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--color-brand-soft);
+  color: var(--color-brand-ink);
 }

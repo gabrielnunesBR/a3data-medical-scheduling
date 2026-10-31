@@ -31,6 +31,18 @@ a3data-medical-scheduling/
 └── README.md
 ```
 
+## Documentação
+
+### Diretrizes de UX/UI
+
+As decisões de design da interface estão documentadas em
+[Diretrizes de UX/UI](docs/ux-ui-decisions.md).
+
+O documento apresenta as referências utilizadas na pesquisa,
+a jornada de agendamento, o design system, a paleta de cores,
+a tipografia, os padrões de acessibilidade e as diretrizes
+de responsividade e experiência do usuário.
+
 ## Pré-requisitos
 
 - Node.js 24 (recomendado) e npm;
