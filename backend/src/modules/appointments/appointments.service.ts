@@ -177,7 +177,7 @@ export class AppointmentsService {
           constraint?: string;
         };
 
-        if (driverError.code === '23P01') {
+        if (driverError.code === '23P01' || driverError.code === '40P01') {
           throw new ConflictException('The selected time slot is no longer available.');
         }
 

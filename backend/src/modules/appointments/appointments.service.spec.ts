@@ -200,6 +200,22 @@ describe('AppointmentsService', () => {
     await expect(service.create(dto)).rejects.toThrow(ConflictException);
   });
 
+  it('should translate database deadlocks during booking to HTTP 409', async () => {
+    const databaseError = new QueryFailedError(
+      'INSERT INTO appointments...',
+      [],
+      Object.assign(new Error('deadlock detected'), {
+        code: '40P01',
+      }),
+    );
+
+    appointmentsRepository.save.mockRejectedValue(databaseError);
+
+    await expect(service.create(dto)).rejects.toThrow(ConflictException);
+
+    expect(appointmentsRepository.save).toHaveBeenCalledOnce();
+  });
+
   it('should not hide unexpected database errors', async () => {
     const error = new Error('Database connection lost');
 
