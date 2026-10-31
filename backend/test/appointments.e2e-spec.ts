@@ -246,4 +246,90 @@ describe('Appointments API (e2e)', () => {
       })
       .expect(422);
   });
+
+  it('should return the same appointment for a repeated key', async () => {
+    const key = randomUUID();
+    const body = validBody();
+
+    const first = await request(app.getHttpServer())
+      .post('/api/appointments')
+      .set('Idempotency-Key', key)
+      .send(body)
+      .expect(201);
+
+    const replay = await request(app.getHttpServer())
+      .post('/api/appointments')
+      .set('Idempotency-Key', key)
+      .send(body)
+      .expect(201);
+
+    expect(replay.body.id).toBe(first.body.id);
+    expect(replay.body).toEqual(first.body);
+
+    expect(
+      await dataSource.getRepository(Appointment).countBy({
+        patientName,
+      }),
+    ).toBe(1);
+
+    expect(replay.body).not.toHaveProperty('idempotencyKey');
+  });
+
+  it('should handle concurrent requests with the same key', async () => {
+    const key = randomUUID();
+    const body = validBody();
+
+    const responses = await Promise.all([
+      request(app.getHttpServer())
+        .post('/api/appointments')
+        .set('Idempotency-Key', key)
+        .send(body),
+
+      request(app.getHttpServer())
+        .post('/api/appointments')
+        .set('Idempotency-Key', key)
+        .send(body),
+    ]);
+
+    expect(responses.map((response) => response.status)).toEqual([
+      201,
+      201,
+    ]);
+
+    expect(responses[0].body.id).toBe(responses[1].body.id);
+
+    expect(
+      await dataSource.getRepository(Appointment).countBy({
+        patientName,
+      }),
+    ).toBe(1);
+  });
+
+  it('should reject reusing a key with different data', async () => {
+    const key = randomUUID();
+    const body = validBody();
+
+    await request(app.getHttpServer())
+      .post('/api/appointments')
+      .set('Idempotency-Key', key)
+      .send(body)
+      .expect(201);
+
+    const response = await request(app.getHttpServer())
+      .post('/api/appointments')
+      .set('Idempotency-Key', key)
+      .send({
+        ...body,
+        patientName: 'Outro paciente',
+      })
+      .expect(409);
+
+    expect(response.body.code).toBe('IDEMPOTENCY_KEY_REUSED');
+
+    expect(
+      await dataSource.getRepository(Appointment).countBy({
+        patientName,
+      }),
+    ).toBe(1);
+  });
 });

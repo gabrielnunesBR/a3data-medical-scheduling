@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DateTime } from 'luxon';
 import {
+  type EntityManager,
   LessThan,
   MoreThan,
   Repository,
@@ -39,7 +40,20 @@ export class AvailabilityService {
     doctorId: number,
     examId: number,
     date: string,
+    manager?: EntityManager,
   ): Promise<string[]> {
+    const doctorsRepository =
+      manager?.getRepository(Doctor) ?? this.doctorsRepository;
+
+    const examsRepository =
+      manager?.getRepository(Exam) ?? this.examsRepository;
+
+    const shiftsRepository =
+      manager?.getRepository(DoctorShift) ?? this.shiftsRepository;
+
+    const appointmentsRepository =
+      manager?.getRepository(Appointment) ?? this.appointmentsRepository;
+
     const selectedDate = DateTime.fromISO(date, {
       zone: CLINIC_TIME_ZONE,
     });
@@ -51,7 +65,7 @@ export class AvailabilityService {
       throw new BadRequestException('Invalid date. Expected YYYY-MM-DD.');
     }
 
-    const doctor = await this.doctorsRepository.findOneBy({
+    const doctor = await doctorsRepository.findOneBy({
       id: doctorId,
     });
 
@@ -59,7 +73,7 @@ export class AvailabilityService {
       throw new NotFoundException('Doctor not found.');
     }
 
-    const exam = await this.examsRepository.findOneBy({
+    const exam = await examsRepository.findOneBy({
       id: examId,
     });
 
@@ -67,7 +81,7 @@ export class AvailabilityService {
       throw new NotFoundException('Exam not found.');
     }
 
-    const shifts = await this.shiftsRepository.find({
+    const shifts = await shiftsRepository.find({
       where: {
         doctorId,
         weekday: selectedDate.weekday,
@@ -84,7 +98,7 @@ export class AvailabilityService {
     const dayStart = selectedDate.startOf('day');
     const dayEnd = dayStart.plus({ days: 1 });
 
-    const appointments = await this.appointmentsRepository.find({
+    const appointments = await appointmentsRepository.find({
       where: {
         doctorId,
         startAt: LessThan(dayEnd.toJSDate()),

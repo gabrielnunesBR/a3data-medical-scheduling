@@ -25,6 +25,7 @@ O fluxo principal está implementado no **backend NestJS** e no **frontend React
 - Proteção contra agendamentos simultâneos sobrepostos no PostgreSQL.
 - Fluxo web responsivo em **português brasileiro**, com revisão e confirmação do agendamento.
 - Limitação de requisições ao endpoint público de criação de agendamentos.
+- Suporte a chave de idempotência para recuperar reservas já confirmadas sem duplicá-las.
 
 ## Estrutura do projeto
 
@@ -222,14 +223,56 @@ curl -i -X POST "http://localhost:3000/api/appointments" \
 
 O horário de término (`endAt`) é calculado **no backend** a partir da duração cadastrada para o exame. Em caso de sucesso, a API retorna `201 Created`, incluindo o ID da reserva, os dados do agendamento e a data de criação. Os instantes podem ser serializados em UTC.
 
+A requisição também aceita o header opcional `Idempotency-Key`, detalhado a seguir.
+
 | Código HTTP | Situação |
 | --- | --- |
 | `201 Created` | Agendamento confirmado |
-| `400 Bad Request` | Dados de entrada inválidos |
+| `400 Bad Request` | Dados de entrada ou header `Idempotency-Key` inválidos |
 | `404 Not Found` | Médico ou exame inexistente |
-| `409 Conflict` | Horário ocupado ou conflito com outra reserva |
+| `409 Conflict` | Horário ocupado, conflito com outra reserva ou reutilização indevida de uma chave de idempotência |
 | `422 Unprocessable Entity` | Horário passado, fora do expediente ou fora da grade válida |
 | `429 Too Many Requests` | Limite de tentativas de agendamento excedido |
+
+
+### Idempotência na criação de agendamentos
+
+O endpoint `POST /api/appointments` aceita o header **opcional** `Idempotency-Key`, contendo um UUID. A chave identifica uma tentativa de criação e permite recuperar o resultado de uma reserva já confirmada sem inserir outro registro.
+
+Exemplo de requisição com idempotência:
+
+```bash
+curl -i -X POST "http://localhost:3000/api/appointments" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  -d '{
+    "patientName": "João Silva",
+    "examId": 17,
+    "doctorId": 1,
+    "startAt": "2030-01-07T09:20:00-03:00"
+  }'
+```
+
+O UUID acima é **apenas ilustrativo**. Para cada nova tentativa de agendamento, utilize uma chave nova; para repetir a **mesma tentativa com os mesmos dados**, reutilize a chave original.
+
+| Situação | Comportamento |
+| --- | --- |
+| Chave nova e agendamento válido | Cria a reserva e retorna `201 Created` |
+| Mesma chave e mesmos dados | Retorna `201 Created` com o **mesmo agendamento e ID**, sem nova inserção |
+| Mesma chave e dados diferentes | Retorna `409 Conflict` com o código `IDEMPOTENCY_KEY_REUSED` |
+| Chave ausente | Mantém o comportamento convencional de criação de agendamentos |
+| Chave com formato inválido | Retorna `400 Bad Request` |
+
+A chave é armazenada na coluna `appointments.idempotency_key` (UUID, aceita `NULL`), protegida por uma restrição `UNIQUE`. Para requisições com chave, a API utiliza **transação e advisory lock transacional do PostgreSQL** antes de consultar ou criar a reserva. Dessa forma, duas requisições simultâneas com a mesma chave são serializadas e podem receber o mesmo resultado.
+
+A idempotência **não substitui** a proteção contra horários sobrepostos: requisições com chaves diferentes ainda estão sujeitas à validação de disponibilidade e à *exclusion constraint* do PostgreSQL.
+
+**Limites e observações:**
+
+- A garantia de recuperação permanece enquanto o agendamento associado à chave existir no banco de dados.
+- O rate limiting continua contabilizando as requisições, inclusive repetições com a mesma chave.
+- A chave identifica a operação; não funciona como mecanismo de autenticação ou autorização.
+
 
 ## Regras de negócio e integridade
 
@@ -381,7 +424,7 @@ docker compose down
 
 O projeto foi desenvolvido para o escopo do desafio técnico. Os endpoints de consulta e criação de agendamentos são públicos, **sem autenticação ou autorização de usuários**. A interface utiliza pt-BR; erros HTTP conhecidos são traduzidos em mensagens amigáveis, sem exibir textos técnicos da API diretamente ao paciente.
 
-Para uso com pacientes reais, seriam necessárias avaliações e medidas adicionais de segurança, privacidade e operação, incluindo controles adequados de identidade, tratamento de dados pessoais, observabilidade e infraestrutura. A **idempotência das requisições de criação** ainda não foi implementada e permanece como possível evolução.
+Para uso com pacientes reais, seriam necessárias avaliações e medidas adicionais de segurança, privacidade e operação, incluindo controles adequados de identidade, tratamento de dados pessoais, observabilidade e infraestrutura. O endpoint de criação oferece idempotência por chave opcional, com persistência e controle transacional no PostgreSQL. A operação não dispensa medidas adicionais de autenticação, proteção contra abuso e governança de dados.
 
 Os materiais originais do desafio foram preservados em `challenge/`.
 

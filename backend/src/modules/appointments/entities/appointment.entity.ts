@@ -5,12 +5,14 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 
 import { Doctor } from '../../doctors/entities/doctor.entity.js';
 import { Exam } from '../../exams/entities/exam.entity.js';
 
 @Entity('appointments')
+@Unique('uq_appointments_idempotency_key', ['idempotencyKey'])
 export class Appointment {
   @PrimaryGeneratedColumn('identity')
   id!: number;
@@ -46,4 +48,12 @@ export class Appointment {
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt!: Date;
+
+  @Column({
+    name: 'idempotency_key',
+    type: 'uuid',
+    nullable: true,
+    select: false,
+  })
+  idempotencyKey!: string | null;
 }
