@@ -42,3 +42,40 @@ export function formatClinicDate(value: string): string {
     year: 'numeric',
   }).format(date);
 }
+
+export function toAppointmentStartAt(
+  date: string,
+  time: string,
+): string {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)
+  ) {
+    throw new RangeError('Invalid appointment date or time.');
+  }
+
+  const [year, month, day] = date.split('-').map(Number);
+  const [hours, minutes] = time.split(':').map(Number);
+
+  const start = new TZDate(
+    year,
+    month - 1,
+    day,
+    hours,
+    minutes,
+    0,
+    0,
+    CLINIC_TIME_ZONE,
+  );
+
+  if (
+    Number.isNaN(start.getTime()) ||
+    toClinicDate(start) !== date ||
+    start.getHours() !== hours ||
+    start.getMinutes() !== minutes
+  ) {
+    throw new RangeError('Invalid appointment date or time.');
+  }
+
+  return new Date(start.getTime()).toISOString();
+}

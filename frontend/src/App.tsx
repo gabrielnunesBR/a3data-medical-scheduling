@@ -8,25 +8,38 @@ import {
 } from 'lucide-react';
 
 import { BookingProgress } from './components/booking-progress';
-import {
-  type Doctor,
-} from './features/booking/availability.api';
+import type { Doctor } from './features/booking/availability.api';
+import type { Appointment } from './features/booking/appointments.api';
 import {
   formatClinicDate,
 } from './features/booking/booking-dates';
+import {
+  BookingConfirmation,
+} from './features/booking/booking-confirmation';
+import {
+  BookingSuccess,
+} from './features/booking/booking-success';
 import {
   DoctorAvailability,
 } from './features/booking/doctor-availability';
 import { ExamSearch } from './features/exams/exam-search';
 import type { Exam } from './features/exams/exams.api';
 
+type BookingStep = 1 | 2 | 3 | 'success';
+
 function App() {
-  const [currentStep, setCurrentStep] = useState<1 | 2>(1);
+  const [currentStep, setCurrentStep] = useState<BookingStep>(1);
 
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+
+  const [confirmedAppointment, setConfirmedAppointment] =
+    useState<Appointment | null>(null);
+
+  const [availabilityNotice, setAvailabilityNotice] =
+    useState<string | null>(null);
 
   function handleExamChange(exam: Exam) {
     if (selectedExam?.id !== exam.id) {
@@ -36,17 +49,48 @@ function App() {
     }
 
     setSelectedExam(exam);
+    setAvailabilityNotice(null);
   }
 
   function handleDoctorChange(doctor: Doctor | null) {
     setSelectedDoctor(doctor);
     setSelectedDate(null);
     setSelectedTime(null);
+    setAvailabilityNotice(null);
   }
 
   function handleDateChange(date: string | null) {
     setSelectedDate(date);
     setSelectedTime(null);
+    setAvailabilityNotice(null);
+  }
+
+  function handleTimeChange(time: string | null) {
+    setSelectedTime(time);
+    setAvailabilityNotice(null);
+  }
+
+  function handleConflict() {
+    setSelectedTime(null);
+    setAvailabilityNotice(
+      'Esse horário acabou de ser reservado. Escolha outro horário disponível.',
+    );
+    setCurrentStep(2);
+  }
+
+  function handleBooked(appointment: Appointment) {
+    setConfirmedAppointment(appointment);
+    setCurrentStep('success');
+  }
+
+  function handleNewBooking() {
+    setCurrentStep(1);
+    setSelectedExam(null);
+    setSelectedDoctor(null);
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setConfirmedAppointment(null);
+    setAvailabilityNotice(null);
   }
 
   return (
@@ -60,11 +104,11 @@ function App() {
       </a>
 
       <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-6xl items-center justify-between
-          px-5 py-4 sm:px-8">
+        <div className="mx-auto flex max-w-6xl items-center
+          justify-between px-5 py-4 sm:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center
-              rounded-xl bg-brand text-white">
+            <div className="flex size-11 items-center
+              justify-center rounded-xl bg-brand text-white">
               <ScanLine size={24} aria-hidden="true" />
             </div>
 
@@ -79,8 +123,8 @@ function App() {
             </div>
           </div>
 
-          <div className="hidden items-center gap-2 text-sm
-            text-muted-ink sm:flex">
+          <div className="hidden items-center gap-2
+            text-sm text-muted-ink sm:flex">
             <ShieldCheck size={18} aria-hidden="true" />
             Agendamento online
           </div>
@@ -89,10 +133,12 @@ function App() {
 
       <main
         id="conteudo-principal"
-        className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14"
+        className="mx-auto max-w-6xl px-5 py-10
+          sm:px-8 sm:py-14"
       >
         <div className="mb-9 max-w-2xl">
-          <p className="mb-3 text-sm font-semibold text-brand-strong">
+          <p className="mb-3 text-sm font-semibold
+            text-brand-strong">
             AGENDAMENTO ONLINE
           </p>
 
@@ -107,17 +153,30 @@ function App() {
           </p>
         </div>
 
-        <div className="grid items-start gap-6
-          lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]">
+        <div
+          className={
+            currentStep === 'success'
+              ? 'mx-auto max-w-2xl'
+              : 'grid items-start gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(280px,1fr)]'
+          }
+        >
           <section
             aria-labelledby="booking-step-heading"
-            className="rounded-2xl border border-line bg-surface
-              p-5 shadow-sm sm:p-8"
+            className="rounded-2xl border border-line
+              bg-surface p-5 shadow-sm sm:p-8"
           >
-            <BookingProgress currentStep={currentStep} />
+            {currentStep !== 'success' && (
+              <BookingProgress currentStep={currentStep} />
+            )}
 
-            <div className="mt-9 border-t border-line pt-8">
-              {currentStep === 1 ? (
+            <div
+              className={
+                currentStep === 'success'
+                  ? ''
+                  : 'mt-9 border-t border-line pt-8'
+              }
+            >
+              {currentStep === 1 && (
                 <>
                   <div className="flex items-start gap-3">
                     <div className="flex size-11 shrink-0
@@ -129,13 +188,14 @@ function App() {
                     <div>
                       <h2
                         id="booking-step-heading"
-                        className="text-xl font-semibold tracking-tight
-                          sm:text-2xl"
+                        className="text-xl font-semibold
+                          tracking-tight sm:text-2xl"
                       >
                         Qual exame você deseja agendar?
                       </h2>
 
-                      <p className="mt-2 text-sm leading-6 text-muted-ink">
+                      <p className="mt-2 text-sm leading-6
+                        text-muted-ink">
                         Encontre o procedimento pelo nome
                         e selecione uma opção para continuar.
                       </p>
@@ -153,24 +213,27 @@ function App() {
                       type="button"
                       disabled={!selectedExam}
                       onClick={() => setCurrentStep(2)}
-                      className="min-h-12 rounded-xl bg-brand px-6
-                        font-semibold text-white transition-colors
+                      className="min-h-12 rounded-xl bg-brand
+                        px-6 font-semibold text-white
                         hover:bg-brand-strong
                         disabled:cursor-not-allowed
-                        disabled:bg-slate-200 disabled:text-slate-500"
+                        disabled:bg-slate-200
+                        disabled:text-slate-500"
                     >
                       Escolher médico e horário
                     </button>
                   </div>
                 </>
-              ) : (
+              )}
+
+              {currentStep === 2 && (
                 <>
                   <button
                     type="button"
                     onClick={() => setCurrentStep(1)}
-                    className="mb-6 inline-flex min-h-11 items-center
-                      gap-2 text-sm font-semibold text-brand-strong
-                      hover:underline"
+                    className="mb-6 inline-flex min-h-11
+                      items-center gap-2 text-sm font-semibold
+                      text-brand-strong hover:underline"
                   >
                     <ChevronLeft size={18} aria-hidden="true" />
                     Voltar para exames
@@ -186,18 +249,30 @@ function App() {
                     <div>
                       <h2
                         id="booking-step-heading"
-                        className="text-xl font-semibold tracking-tight
-                          sm:text-2xl"
+                        className="text-xl font-semibold
+                          tracking-tight sm:text-2xl"
                       >
                         Escolha o médico, a data e o horário
                       </h2>
 
-                      <p className="mt-2 text-sm leading-6 text-muted-ink">
-                        Confira a agenda do profissional e escolha
-                        um horário disponível para seu exame.
+                      <p className="mt-2 text-sm leading-6
+                        text-muted-ink">
+                        Confira a agenda do profissional e
+                        escolha um horário disponível.
                       </p>
                     </div>
                   </div>
+
+                  {availabilityNotice && (
+                    <div
+                      role="alert"
+                      className="mt-6 rounded-xl border
+                        border-amber-200 bg-amber-50
+                        p-4 text-sm text-amber-900"
+                    >
+                      {availabilityNotice}
+                    </div>
+                  )}
 
                   {selectedExam && (
                     <DoctorAvailability
@@ -207,98 +282,132 @@ function App() {
                       time={selectedTime}
                       onDoctorChange={handleDoctorChange}
                       onDateChange={handleDateChange}
-                      onTimeChange={setSelectedTime}
+                      onTimeChange={handleTimeChange}
                     />
                   )}
 
                   {selectedTime && (
-                    <div className="mt-8 rounded-xl border
-                      border-line bg-brand-subtle p-4">
-                      <p className="text-sm font-medium
-                        text-brand-ink">
-                        Horário selecionado. Na próxima etapa,
-                        você poderá revisar os dados e confirmar
-                        o agendamento.
-                      </p>
+                    <div className="mt-8 flex justify-end
+                      border-t border-line pt-6">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(3)}
+                        className="min-h-12 rounded-xl bg-brand
+                          px-6 font-semibold text-white
+                          hover:bg-brand-strong"
+                      >
+                        Revisar agendamento
+                      </button>
                     </div>
                   )}
                 </>
               )}
+
+              {currentStep === 3 &&
+                selectedExam &&
+                selectedDoctor &&
+                selectedDate &&
+                selectedTime && (
+                  <BookingConfirmation
+                    exam={selectedExam}
+                    doctor={selectedDoctor}
+                    date={selectedDate}
+                    time={selectedTime}
+                    onBack={() => setCurrentStep(2)}
+                    onBooked={handleBooked}
+                    onConflict={handleConflict}
+                  />
+                )}
+
+              {currentStep === 'success' &&
+                confirmedAppointment &&
+                selectedExam &&
+                selectedDoctor && (
+                  <BookingSuccess
+                    appointment={confirmedAppointment}
+                    exam={selectedExam}
+                    doctor={selectedDoctor}
+                    onNewBooking={handleNewBooking}
+                  />
+                )}
             </div>
           </section>
 
-          <aside
-            aria-labelledby="summary-heading"
-            className="rounded-2xl border border-line
-              bg-surface p-6 shadow-sm lg:sticky lg:top-6"
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center
-                justify-center rounded-xl bg-brand-subtle
-                text-brand-strong">
-                <CalendarDays size={20} aria-hidden="true" />
+          {currentStep !== 'success' && (
+            <aside
+              aria-labelledby="summary-heading"
+              className="rounded-2xl border border-line
+                bg-surface p-6 shadow-sm lg:sticky lg:top-6"
+            >
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center
+                  justify-center rounded-xl bg-brand-subtle
+                  text-brand-strong">
+                  <CalendarDays size={20} aria-hidden="true" />
+                </div>
+
+                <h2
+                  id="summary-heading"
+                  className="text-lg font-semibold"
+                >
+                  Seu agendamento
+                </h2>
               </div>
 
-              <h2
-                id="summary-heading"
-                className="text-lg font-semibold"
-              >
-                Seu agendamento
-              </h2>
-            </div>
+              <dl className="mt-6 divide-y divide-line">
+                <div className="py-4">
+                  <dt className="text-sm text-muted-ink">
+                    Exame
+                  </dt>
 
-            <dl className="mt-6 divide-y divide-line">
-              <div className="py-4">
-                <dt className="text-sm text-muted-ink">
-                  Exame
-                </dt>
+                  <dd className="mt-1 font-medium text-ink">
+                    {selectedExam?.name ?? 'Não selecionado'}
 
-                <dd className="mt-1 font-medium text-ink">
-                  {selectedExam?.name ?? 'Não selecionado'}
+                    {selectedExam && (
+                      <span className="mt-1 block text-sm
+                        font-normal text-muted-ink">
+                        Duração: {selectedExam.durationMinutes} minutos
+                      </span>
+                    )}
+                  </dd>
+                </div>
 
-                  {selectedExam && (
-                    <span className="mt-1 block text-sm
-                      font-normal text-muted-ink">
-                      Duração: {selectedExam.durationMinutes} minutos
-                    </span>
-                  )}
-                </dd>
-              </div>
+                <div className="py-4">
+                  <dt className="text-sm text-muted-ink">
+                    Profissional
+                  </dt>
 
-              <div className="py-4">
-                <dt className="text-sm text-muted-ink">
-                  Profissional
-                </dt>
+                  <dd className="mt-1 font-medium text-ink">
+                    {selectedDoctor?.name ?? 'Não selecionado'}
+                  </dd>
+                </div>
 
-                <dd className="mt-1 font-medium text-ink">
-                  {selectedDoctor?.name ?? 'Não selecionado'}
-                </dd>
-              </div>
+                <div className="py-4">
+                  <dt className="text-sm text-muted-ink">
+                    Data e horário
+                  </dt>
 
-              <div className="py-4">
-                <dt className="text-sm text-muted-ink">
-                  Data e horário
-                </dt>
+                  <dd className="mt-1 font-medium text-ink">
+                    {selectedDate
+                      ? formatClinicDate(selectedDate)
+                      : 'Não selecionados'}
 
-                <dd className="mt-1 font-medium text-ink">
-                  {selectedDate
-                    ? formatClinicDate(selectedDate)
-                    : 'Não selecionados'}
+                    {selectedTime && (
+                      <span className="mt-1 block text-sm
+                        font-semibold text-brand-strong">
+                        {selectedTime}
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              </dl>
 
-                  {selectedTime && (
-                    <span className="mt-1 block text-sm
-                      font-semibold text-brand-strong">
-                      {selectedTime}
-                    </span>
-                  )}
-                </dd>
-              </div>
-            </dl>
-
-            <p className="mt-5 text-xs leading-5 text-muted-ink">
-              Os horários são apresentados no horário de Brasília.
-            </p>
-          </aside>
+              <p className="mt-5 text-xs leading-5
+                text-muted-ink">
+                Os horários são apresentados no horário de Brasília.
+              </p>
+            </aside>
+          )}
         </div>
       </main>
     </div>
