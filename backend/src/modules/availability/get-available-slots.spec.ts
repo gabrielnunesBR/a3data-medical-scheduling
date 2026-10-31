@@ -195,4 +195,58 @@ describe('getAvailableSlots', () => {
       }),
     ).toThrow(RangeError);
   });
+
+  it.each([
+    {
+      scenario: 'one millisecond before the slot starts',
+      now: '2026-11-02T09:59:59.999-03:00',
+      shouldInclude: true,
+    },
+    {
+      scenario: 'exactly when the slot starts',
+      now: '2026-11-02T10:00:00.000-03:00',
+      shouldInclude: true,
+    },
+    {
+      scenario: 'one millisecond after the slot starts',
+      now: '2026-11-02T10:00:00.001-03:00',
+      shouldInclude: false,
+    },
+  ])('should handle $scenario', ({ now, shouldInclude }) => {
+    const result = getAvailableSlots({
+      date: monday,
+      durationMinutes: 40,
+      shifts,
+      occupiedIntervals: [],
+      now: new Date(now),
+    });
+
+    expect(result.includes('10:00')).toBe(shouldInclude);
+
+    // O próximo horário ainda deve estar disponível.
+    expect(result).toContain('10:40');
+  });
+
+  it('should use the clinic weekday after UTC midnight', () => {
+    const result = getAvailableSlots({
+      date: monday,
+      durationMinutes: 40,
+      shifts: [
+        {
+          weekday: 1,
+          startTime: '18:00',
+          endTime: '22:00',
+        },
+      ],
+      occupiedIntervals: [],
+
+      // Terça-feira, 00:00 UTC.
+      // Ainda é segunda-feira, 21:00 em Brasília.
+      now: new Date('2026-11-03T00:00:00.000Z'),
+    });
+
+    // O último horário do turno começa às 21:20
+    // e termina às 22:00 no horário da clínica.
+    expect(result).toEqual(['21:20']);
+  });
 });
