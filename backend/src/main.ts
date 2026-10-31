@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module.js';
 import { configureApp } from './config/configure-app.js';
+import { configureSwagger } from './config/configure-swagger.js';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
@@ -13,6 +14,7 @@ async function bootstrap(): Promise<void> {
   });
 
   configureApp(app);
+  configureSwagger(app);
 
   await app.listen(process.env.PORT ?? 3000);
 }
