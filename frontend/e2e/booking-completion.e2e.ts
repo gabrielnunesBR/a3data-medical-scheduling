@@ -14,6 +14,10 @@ import {
 import type { Exam } from '../src/features/exams/exams.api.js';
 import { createTestDatabaseClient } from './test-database.js';
 
+type BookingStep = 'exam' | 'schedule' | 'confirmation';
+
+const RESPONSIVE_WIDTHS = [320, 375, 768, 1280] as const;
+
 type BookingFixture = {
   exam: Exam;
   doctor: Doctor;
@@ -137,10 +141,22 @@ async function selectCalendarDate(page: Page, date: string): Promise<void> {
   throw new Error(`Could not select calendar date: ${date}`);
 }
 
-async function goToConfirmation(page: Page, fixture: BookingFixture): Promise<void> {
+async function goToConfirmation(
+  page: Page,
+  fixture: BookingFixture,
+  onStep?: (step: BookingStep) => Promise<void>,
+): Promise<void> {
   const { exam, doctor, date, time } = fixture;
 
   await page.goto('/');
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Qual exame você deseja agendar?',
+    }),
+  ).toBeVisible();
+
+  await onStep?.('exam');
 
   await page.getByRole('button').filter({ hasText: exam.name }).first().click();
 
@@ -149,6 +165,14 @@ async function goToConfirmation(page: Page, fixture: BookingFixture): Promise<vo
       name: 'Escolher médico e horário',
     })
     .click();
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Escolha o médico, a data e o horário',
+    }),
+  ).toBeVisible();
+
+  await onStep?.('schedule');
 
   await page.getByRole('combobox', { name: 'Profissional' }).selectOption(String(doctor.id));
 
@@ -172,6 +196,31 @@ async function goToConfirmation(page: Page, fixture: BookingFixture): Promise<vo
       name: 'Revise e confirme seu agendamento',
     }),
   ).toBeVisible();
+
+  await onStep?.('confirmation');
+}
+
+async function expectNoHorizontalOverflowAtWidths(page: Page, step: string): Promise<void> {
+  for (const width of RESPONSIVE_WIDTHS) {
+    await page.setViewportSize({ width, height: 900 });
+
+    await page.evaluate('document.fonts.ready');
+
+    const dimensions = await page.evaluate<{
+      viewport: number;
+      document: number;
+      body: number;
+    }>(`({
+      viewport: document.documentElement.clientWidth,
+      document: document.documentElement.scrollWidth,
+      body: document.body.scrollWidth
+    })`);
+
+    expect(
+      Math.max(dimensions.document, dimensions.body),
+      `${step} at ${width}px: ${JSON.stringify(dimensions)}`,
+    ).toBeLessThanOrEqual(dimensions.viewport + 1);
+  }
 }
 
 async function expectAccessiblePage(page: Page): Promise<void> {
@@ -181,6 +230,14 @@ async function expectAccessiblePage(page: Page): Promise<void> {
 
   expect(results.violations).toEqual([]);
 }
+
+test('keeps exam, schedule and review responsive across viewports', async ({ page, request }) => {
+  const fixture = await getBookingFixture(request);
+
+  await goToConfirmation(page, fixture, async (step) => {
+    await expectNoHorizontalOverflowAtWidths(page, step);
+  });
+});
 
 test('creates an appointment and persists it in PostgreSQL', async ({ page, request }) => {
   const fixture = await getBookingFixture(request);
@@ -209,6 +266,7 @@ test('creates an appointment and persists it in PostgreSQL', async ({ page, requ
 
   await expect(page.getByText(patientName)).toBeVisible();
   await expectAccessiblePage(page);
+  await expectNoHorizontalOverflowAtWidths(page, 'success');
 
   const confirmationText = await page.getByText(/^#\d+$/).innerText();
   const appointmentId = Number(confirmationText.slice(1));
