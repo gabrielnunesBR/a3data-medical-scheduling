@@ -1,0 +1,42 @@
+import { Logger } from '@nestjs/common';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { performance } from 'node:perf_hooks';
+
+type HttpRequest = IncomingMessage & {
+  route?: {
+    path?: unknown;
+  };
+};
+
+const logger = new Logger('HttpRequest');
+
+export function httpRequestLogger(
+  request: HttpRequest,
+  response: ServerResponse,
+  next: () => void,
+): void {
+  const startedAt = performance.now();
+
+  response.once('finish', () => {
+    const metadata = {
+      method: request.method ?? 'UNKNOWN',
+      route: typeof request.route?.path === 'string' ? request.route.path : 'unmatched',
+      statusCode: response.statusCode,
+      durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
+    };
+
+    if (response.statusCode >= 500) {
+      logger.error('http_request_completed', metadata);
+      return;
+    }
+
+    if (response.statusCode >= 400) {
+      logger.warn('http_request_completed', metadata);
+      return;
+    }
+
+    logger.log('http_request_completed', metadata);
+  });
+
+  next();
+}
