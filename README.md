@@ -13,19 +13,19 @@ O fluxo principal está implementado no **backend NestJS** e no **frontend React
 | Validação e datas | Zod, Luxon |
 | Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query, React Hook Form, React DayPicker |
 | Testes do backend | Vitest, Supertest |
-| Testes do frontend | Vitest, React Testing Library, MSW, Playwright (Chromium) |
+| Testes do frontend | Vitest, React Testing Library, MSW, Playwright (Chromium), axe-core |
 | Infraestrutura | Docker Compose, npm Workspaces |
 
 ## Funcionalidades
 
-- Busca de exames por nome, com duração do procedimento.
+- Busca de exames por nome, com indicação da duração do procedimento.
 - Listagem de médicos e consulta da disponibilidade por data e exame.
 - Agendamento com nome do paciente, médico, exame e horário selecionado.
 - Validação de expediente, duração, horários passados e conflitos de reserva.
 - Proteção contra agendamentos simultâneos sobrepostos no PostgreSQL.
 - Fluxo web responsivo em **português brasileiro**, com revisão e confirmação do agendamento.
 - Limitação de requisições ao endpoint público de criação de agendamentos.
-- Suporte a chave de idempotência para recuperar reservas já confirmadas sem duplicá-las.
+- Suporte a chaves de idempotência para recuperar reservas já confirmadas sem duplicá-las.
 
 ## Estrutura do projeto
 
@@ -109,7 +109,7 @@ npm run seed:doctors --workspace=backend
 
 Os seeds importam **30 exames** de `challenge/dados/exames.csv`, preservando seus IDs, e **5 médicos com 36 turnos semanais**, conforme `challenge/dados/medicos.md`.
 
-Ambos são idempotentes: podem ser executados novamente sem duplicar ou sobrescrever os registros existentes. A importação dos médicos e turnos é transacional.
+Ambos são idempotentes: podem ser executados novamente sem duplicar ou sobrescrever registros existentes. A importação dos médicos e turnos é transacional.
 
 ### 6. Iniciar backend e frontend
 
@@ -184,7 +184,7 @@ curl "http://localhost:3000/api/doctors/1/availability?examId=17&date=2030-01-07
 
 O ID `1` é ilustrativo; consulte o ID real em `GET /api/doctors`.
 
-Exemplo **ilustrativo** de resposta para um turno das 08h às 12h e exame de 40 minutos, sem agendamentos existentes:
+Exemplo **ilustrativo** de resposta para um turno das 08h às 12h e um exame de 40 minutos, sem agendamentos existentes:
 
 ```json
 [
@@ -234,10 +234,9 @@ A requisição também aceita o header opcional `Idempotency-Key`, detalhado a s
 | `422 Unprocessable Entity` | Horário passado, fora do expediente ou fora da grade válida |
 | `429 Too Many Requests` | Limite de tentativas de agendamento excedido |
 
-
 ### Idempotência na criação de agendamentos
 
-O endpoint `POST /api/appointments` aceita o header **opcional** `Idempotency-Key`, contendo um UUID. A chave identifica uma tentativa de criação e permite recuperar o resultado de uma reserva já confirmada sem inserir outro registro.
+O endpoint `POST /api/appointments` aceita o header **opcional** `Idempotency-Key`, contendo um UUID. A chave identifica uma operação de criação e permite recuperar o resultado de uma reserva já confirmada sem inserir outro registro.
 
 Exemplo de requisição com idempotência:
 
@@ -253,7 +252,7 @@ curl -i -X POST "http://localhost:3000/api/appointments" \
   }'
 ```
 
-O UUID acima é **apenas ilustrativo**. Para cada nova tentativa de agendamento, utilize uma chave nova; para repetir a **mesma tentativa com os mesmos dados**, reutilize a chave original.
+O UUID acima é **apenas ilustrativo**. Para cada nova operação de agendamento, utilize uma chave nova; para repetir a **mesma operação com os mesmos dados**, reutilize a chave original.
 
 | Situação | Comportamento |
 | --- | --- |
@@ -263,16 +262,23 @@ O UUID acima é **apenas ilustrativo**. Para cada nova tentativa de agendamento,
 | Chave ausente | Mantém o comportamento convencional de criação de agendamentos |
 | Chave com formato inválido | Retorna `400 Bad Request` |
 
-A chave é armazenada na coluna `appointments.idempotency_key` (UUID, aceita `NULL`), protegida por uma restrição `UNIQUE`. Para requisições com chave, a API utiliza **transação e advisory lock transacional do PostgreSQL** antes de consultar ou criar a reserva. Dessa forma, duas requisições simultâneas com a mesma chave são serializadas e podem receber o mesmo resultado.
+A chave é armazenada na coluna `appointments.idempotency_key` (UUID, aceita `NULL`), protegida por uma restrição `UNIQUE`. Para requisições com chave, a API utiliza **transação e advisory lock transacional do PostgreSQL** antes de consultar ou criar a reserva. Duas requisições simultâneas com a mesma chave são serializadas e podem receber o mesmo resultado.
 
 A idempotência **não substitui** a proteção contra horários sobrepostos: requisições com chaves diferentes ainda estão sujeitas à validação de disponibilidade e à *exclusion constraint* do PostgreSQL.
 
-**Limites e observações:**
+#### Integração com o frontend
 
-- A garantia de recuperação permanece enquanto o agendamento associado à chave existir no banco de dados.
-- O rate limiting continua contabilizando as requisições, inclusive repetições com a mesma chave.
-- A chave identifica a operação; não funciona como mecanismo de autenticação ou autorização.
+O React utiliza `crypto.randomUUID()` para criar uma chave por operação. Enquanto a tela de confirmação permanecer montada:
 
+- Tentativas com os mesmos dados reutilizam a mesma chave.
+- Alterações no nome do paciente, exame, médico ou horário geram uma nova chave.
+- Em uma falha de rede ou resposta de servidor inconclusiva, o paciente pode repetir manualmente a confirmação com a chave original.
+- Não há repetição automática da requisição de criação.
+- A chave é descartada após a confirmação bem-sucedida.
+
+As chaves são mantidas **somente em memória**. Recarregar a página encerra a capacidade do cliente de reutilizar a chave anterior; não há persistência em armazenamento do navegador.
+
+A chave identifica a operação, **não** é um mecanismo de autenticação ou autorização. O rate limiting continua contabilizando as requisições, inclusive as repetições com a mesma chave. A garantia de recuperação permanece enquanto o agendamento associado existir no banco.
 
 ## Regras de negócio e integridade
 
@@ -301,6 +307,22 @@ Ela impede que duas requisições concorrentes confirmem horários conflitantes 
 
 A tabela também possui `CHECK (start_at < end_at)`, impedindo intervalos com duração nula ou negativa.
 
+## Segurança e confiabilidade
+
+### Cabeçalhos HTTP de segurança
+
+A API utiliza os cabeçalhos HTTP de segurança nativos do NestJS para reforçar a proteção das respostas. Entre as proteções estão:
+
+- `Content-Security-Policy`;
+- `X-Content-Type-Options`;
+- `X-Frame-Options`;
+- `Referrer-Policy`;
+- remoção do cabeçalho `X-Powered-By`.
+
+Esses cabeçalhos são aplicados às respostas de sucesso e também às respostas de erro. A configuração exige NestJS 12.1 ou superior e o registro de `app.useSecurityHeaders()` antes da inicialização da aplicação.
+
+O frontend utiliza o proxy `/api` no ambiente de desenvolvimento. Configurações de CORS e proxies devem ser adaptadas às origens e à infraestrutura da implantação; os cabeçalhos descritos acima se referem à **API**, não ao servidor de desenvolvimento do Vite.
+
 ### Proteção contra excesso de requisições
 
 O endpoint `POST /api/appointments` utiliza `@nestjs/throttler` para aplicar **20 requisições por minuto por endereço IP**. Ao exceder o limite, retorna `429 Too Many Requests`. Os endpoints de consulta não recebem esse limite nesta configuração.
@@ -317,7 +339,7 @@ O projeto possui três níveis de testes:
 | --- | --- | --- |
 | Unitários e componentes | Vitest, React Testing Library, MSW | Regras de negócio, formulários e estados da interface |
 | E2E HTTP | Vitest, Supertest, PostgreSQL | Endpoints, persistência, validações e concorrência |
-| E2E no navegador | Playwright, Chromium | Jornada real entre React, NestJS e PostgreSQL |
+| E2E no navegador | Playwright, Chromium, axe-core | Jornada real, idempotência, responsividade e acessibilidade |
 
 ### 1. Preparar o banco de testes
 
@@ -371,7 +393,9 @@ NODE_ENV=test npm exec --workspace=backend -- vitest run \
   test/appointments-concurrency.e2e-spec.ts
 ```
 
-Entre os cenários cobertos estão: requisições concorrentes para o mesmo horário, sobreposições com durações diferentes, horários consecutivos, atendimentos simultâneos por médicos diferentes e a restrição `23P01` do PostgreSQL.
+Entre os cenários cobertos estão requisições concorrentes para o mesmo horário, sobreposições com durações diferentes, horários consecutivos, atendimentos simultâneos por médicos diferentes e a restrição `23P01` do PostgreSQL.
+
+Os testes HTTP também cobrem idempotência, reaproveitamento de chaves e rate limiting. Os testes de cabeçalhos de segurança verificam as respostas `200`, `400` e `404`.
 
 ### 4. Testes E2E no navegador
 
@@ -395,14 +419,20 @@ npm run test:browser --workspace=frontend -- --headed
 
 O Playwright inicia automaticamente a API de testes na **porta 3100** e o frontend na **porta 5174**, utilizando o PostgreSQL isolado na porta **5434**. A configuração não reaproveita servidores previamente iniciados nessas portas.
 
-Os cenários cobrem seleção de exame, médico, data e horário; revisão; confirmação e persistência; atualização da disponibilidade; e tratamento real de `409 Conflict`. Os agendamentos criados são identificados individualmente e removidos após cada cenário, quando a execução conclui normalmente.
+Os cenários cobrem seleção de exame, médico, data e horário; revisão; confirmação e persistência; atualização da disponibilidade; e tratamento real de `409 Conflict`. Também é simulada a perda da resposta após a gravação no PostgreSQL, verificando que a repetição idempotente recupera o mesmo agendamento sem duplicá-lo.
 
-### 5. Build e lint
+A suíte de qualidade de interface verifica a ausência de transbordamento horizontal em telas de diferentes larguras, a navegação por teclado e violações detectáveis automaticamente das diretrizes WCAG 2.0 e 2.1 (níveis A e AA), usando axe-core. Essas verificações automatizadas não substituem uma auditoria manual completa de acessibilidade.
+
+Os agendamentos criados nos testes são identificados individualmente e removidos após cada cenário, quando a execução conclui normalmente.
+
+### 5. Build, lint e formatação
 
 ```bash
 npm run build
 npm run lint --workspace=frontend
 ```
+
+O projeto compartilha uma configuração do Prettier para padronizar código no frontend e no backend.
 
 ## Comandos úteis
 
@@ -424,7 +454,7 @@ docker compose down
 
 O projeto foi desenvolvido para o escopo do desafio técnico. Os endpoints de consulta e criação de agendamentos são públicos, **sem autenticação ou autorização de usuários**. A interface utiliza pt-BR; erros HTTP conhecidos são traduzidos em mensagens amigáveis, sem exibir textos técnicos da API diretamente ao paciente.
 
-Para uso com pacientes reais, seriam necessárias avaliações e medidas adicionais de segurança, privacidade e operação, incluindo controles adequados de identidade, tratamento de dados pessoais, observabilidade e infraestrutura. O endpoint de criação oferece idempotência por chave opcional, com persistência e controle transacional no PostgreSQL. A operação não dispensa medidas adicionais de autenticação, proteção contra abuso e governança de dados.
+Para uso com pacientes reais, seriam necessárias avaliações e medidas adicionais de segurança, privacidade e operação, incluindo controles adequados de identidade, tratamento de dados pessoais, observabilidade e infraestrutura. As proteções atuais não substituem medidas adicionais de autenticação, proteção contra abuso e governança de dados.
 
 Os materiais originais do desafio foram preservados em `challenge/`.
 
