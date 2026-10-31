@@ -159,6 +159,11 @@ export class AppointmentsService {
       );
     }
 
+    // The selected slot may expire while the availability query is running.
+    if (start.toMillis() < Date.now()) {
+      throw new UnprocessableEntityException('Cannot schedule an appointment in the past.');
+    }
+
     try {
       const appointment = await appointmentsRepository.save({
         patientName: dto.patientName.trim(),

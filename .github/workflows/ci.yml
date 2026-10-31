@@ -42,7 +42,7 @@ jobs:
           npx --no-install prettier --check \
             "backend/src/**/*.ts" \
             "backend/test/**/*.ts" \
-            "frontend/src/**/*.{ts,tsx}" \
+            "frontend/src/**/*.{ts,tsx,css}" \
             "frontend/e2e/**/*.ts"
 
       - name: Lint backend

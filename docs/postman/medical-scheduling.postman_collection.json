@@ -19,9 +19,9 @@
       "script": {
         "type": "text/javascript",
         "exec": [
-          "pm.test('A resposta contém X-Request-ID válido', function () {",
+          "pm.test('Response contains a valid X-Request-ID', function () {",
           "  const requestId = pm.response.headers.get('X-Request-ID');",
-          "  pm.expect(requestId, 'X-Request-ID ausente').to.be.a('string');",
+          "  pm.expect(requestId, 'X-Request-ID is missing').to.be.a('string');",
           "  pm.expect(requestId).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);",
           "});"
         ]
@@ -76,13 +76,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/health",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "health"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
             },
             "description": "Readiness check. HTTP 200 com {\"status\":\"ok\"} quando a consulta SELECT 1 ao PostgreSQL funciona; HTTP 503 se a dependência estiver indisponível."
           },
@@ -94,13 +89,8 @@
                 "header": [],
                 "url": {
                   "raw": "{{baseUrl}}/api/health",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "health"
-                  ]
+                  "host": ["{{baseUrl}}"],
+                  "path": ["api", "health"]
                 }
               },
               "status": "OK",
@@ -121,11 +111,11 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('GET /api/health retorna 200 quando o banco está pronto', function () {",
+                  "pm.test('GET /api/health returns 200 when the database is ready', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
                   "if (pm.response.code === 200) {",
-                  "  pm.test('Health check retorna status ok', function () {",
+                  "  pm.test('Health check returns an OK status', function () {",
                   "    pm.expect(pm.response.json()).to.deep.equal({ status: 'ok' });",
                   "  });",
                   "}"
@@ -146,13 +136,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/exams",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "exams"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "exams"]
             },
             "description": "Lista o catálogo completo, ordenado por nome. A resposta inclui id, name e durationMinutes."
           },
@@ -163,12 +148,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('GET /api/exams retorna 200', function () {",
+                  "pm.test('GET /api/exams returns 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
                   "if (pm.response.code === 200) {",
                   "  const exams = pm.response.json();",
-                  "  pm.test('Resposta contém uma lista de exames', function () {",
+                  "  pm.test('Response contains a list of exams', function () {",
                   "    pm.expect(exams).to.be.an('array');",
                   "    exams.forEach(function (exam) {",
                   "      pm.expect(exam.id).to.be.a('number');",
@@ -189,13 +174,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/exams?search={{examSearch}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "exams"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "exams"],
               "query": [
                 {
                   "key": "search",
@@ -213,19 +193,19 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Busca de exames retorna 200', function () {",
+                  "pm.test('Exam search returns 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
                   "if (pm.response.code === 200) {",
                   "  const exams = pm.response.json();",
                   "  const searchValue = pm.variables.get('examSearch');",
-                  "  pm.test('Variável examSearch está configurada', function () {",
+                  "  pm.test('examSearch variable is configured', function () {",
                   "    pm.expect(searchValue).to.be.a('string');",
                   "    pm.expect(searchValue.trim()).not.to.equal('');",
                   "  });",
                   "  if (typeof searchValue === 'string' && searchValue.trim()) {",
                   "    const term = searchValue.toLowerCase().trim();",
-                  "    pm.test('Exames encontrados correspondem ao texto buscado', function () {",
+                  "    pm.test('Returned exams match the search term', function () {",
                   "      pm.expect(exams).to.be.an('array');",
                   "      exams.forEach(function (exam) {",
                   "        pm.expect(exam.name.toLowerCase()).to.include(term);",
@@ -250,13 +230,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/doctors",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "doctors"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors"]
             },
             "description": "Lista profissionais disponíveis para agendamento; cada item contém id, name e crm."
           },
@@ -267,12 +242,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('GET /api/doctors retorna 200', function () {",
+                  "pm.test('GET /api/doctors returns 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
                   "if (pm.response.code === 200) {",
                   "  const doctors = pm.response.json();",
-                  "  pm.test('Médicos apresentam id, nome e CRM', function () {",
+                  "  pm.test('Doctors include ID, name, and CRM', function () {",
                   "    pm.expect(doctors).to.be.an('array');",
                   "    doctors.forEach(function (doctor) {",
                   "      pm.expect(doctor.id).to.be.a('number');",
@@ -298,15 +273,8 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/api/doctors/{{doctorId}}/availability?examId={{examId}}&date={{date}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "doctors",
-                "{{doctorId}}",
-                "availability"
-              ],
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "doctors", "{{doctorId}}", "availability"],
               "query": [
                 {
                   "key": "examId",
@@ -329,12 +297,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Consulta de disponibilidade retorna 200', function () {",
+                  "pm.test('Availability query returns 200', function () {",
                   "  pm.response.to.have.status(200);",
                   "});",
                   "if (pm.response.code === 200) {",
                   "  const slots = pm.response.json();",
-                  "  pm.test('Horários seguem o formato HH:mm', function () {",
+                  "  pm.test('Available slots follow the HH:mm format', function () {",
                   "    pm.expect(slots).to.be.an('array');",
                   "    slots.forEach(function (time) {",
                   "      pm.expect(time).to.match(/^([01]\\d|2[0-3]):[0-5]\\d$/);",
@@ -371,13 +339,8 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/api/appointments",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "appointments"
-              ]
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "appointments"]
             },
             "description": "AÇÃO DE ESCRITA: cria uma reserva no banco de desenvolvimento. Antes de enviar, consulte a disponibilidade e substitua o valor literal de startAt por um horário HH:mm retornado, no formato YYYY-MM-DDTHH:mm:00-03:00. O horário inicial é APENAS exemplo e pode estar ocupado. HTTP 201 indica criação; 409 indica conflito. O header Idempotency-Key é opcional e fica desabilitado por padrão; se ativá-lo, gere uma chave nova para operações distintas. Não depende de variável criada por scripts de outras requisições.",
             "body": {
@@ -397,12 +360,12 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('POST retorna 201 ou conflito de reserva 409', function () {",
+                  "pm.test('POST returns 201 or a 409 booking conflict', function () {",
                   "  pm.expect([201, 409]).to.include(pm.response.code);",
                   "});",
                   "if (pm.response.code === 201) {",
                   "  const appointment = pm.response.json();",
-                  "  pm.test('Reserva criada retorna os principais campos', function () {",
+                  "  pm.test('Created booking returns the main fields', function () {",
                   "    pm.expect(appointment.id).to.be.a('number');",
                   "    pm.expect(appointment.patientName).to.be.a('string');",
                   "    pm.expect(appointment.examId).to.be.a('number');",
@@ -414,7 +377,7 @@
                   "}",
                   "if (pm.response.code === 409) {",
                   "  const error = pm.response.json();",
-                  "  pm.test('Conflito possui status e mensagem', function () {",
+                  "  pm.test('Conflict response contains a status code and message', function () {",
                   "    pm.expect(error.statusCode).to.equal(409);",
                   "    pm.expect(error.message).to.exist;",
                   "  });",

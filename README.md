@@ -34,16 +34,16 @@ As capturas mostram a jornada de agendamento em diferentes tamanhos de tela.
 
 ## Tecnologias
 
-| Camada | Tecnologias |
-| --- | --- |
-| Backend | Node.js 24, NestJS, TypeScript, TypeORM, OpenAPI/Swagger |
-| Banco de dados | PostgreSQL 17 |
-| Validação e datas | Zod, Luxon |
-| Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query, React Hook Form, React DayPicker |
-| Testes do backend | Vitest, Supertest |
-| Testes do frontend | Vitest, React Testing Library, MSW, Playwright (Chromium), axe-core |
-| Infraestrutura | Docker Compose, npm Workspaces, GitHub Actions |
-| Documentação e observabilidade | Swagger UI, coleção Postman/Insomnia, logs JSON e Request ID |
+| Camada                         | Tecnologias                                                                             |
+| ------------------------------ | --------------------------------------------------------------------------------------- |
+| Backend                        | Node.js 24, NestJS, TypeScript, TypeORM, OpenAPI/Swagger                                |
+| Banco de dados                 | PostgreSQL 17                                                                           |
+| Validação e datas              | Zod, Luxon                                                                              |
+| Frontend                       | React, TypeScript, Vite, Tailwind CSS, TanStack Query, React Hook Form, React DayPicker |
+| Testes do backend              | Vitest, Supertest                                                                       |
+| Testes do frontend             | Vitest, React Testing Library, MSW, Playwright (Chromium), axe-core                     |
+| Infraestrutura                 | Docker Compose, npm Workspaces, GitHub Actions                                          |
+| Documentação e observabilidade | Swagger UI, coleção Postman/Insomnia, logs JSON e Request ID                            |
 
 ## Arquitetura e decisões técnicas
 
@@ -52,7 +52,7 @@ O projeto utiliza um **monorepo com npm Workspaces**, separando a API NestJS (`b
 ### Backend
 
 - **NestJS e TypeScript:** organização por módulos, injeção de dependências e separação entre controllers, services e regras de negócio.
-- **PostgreSQL:** persistência relacional e garantias de integridade transacional. A *exclusion constraint* GiST impede agendamentos sobrepostos para um mesmo médico, inclusive sob concorrência.
+- **PostgreSQL:** persistência relacional e garantias de integridade transacional. A _exclusion constraint_ GiST impede agendamentos sobrepostos para um mesmo médico, inclusive sob concorrência.
 - **TypeORM:** mapeamento das entidades e evolução do schema por migrations, mantendo `synchronize: false`.
 - **Zod:** validação dos dados recebidos pela API.
 - **Luxon:** tratamento de instantes, datas e fuso horário da clínica.
@@ -131,15 +131,24 @@ As decisões sobre a jornada do paciente, o design system, as cores, a tipografi
 
 ## Instalação e execução local
 
-Execute os comandos a seguir **na raiz do repositório**, salvo indicação contrária.
+### 1. Clonar o repositório
 
-### 1. Instalar as dependências
+No terminal, acesse o diretório em que deseja armazenar o projeto e execute:
+
+```bash
+git clone https://github.com/gabrielnunesBR/a3data-medical-scheduling.git
+cd a3data-medical-scheduling
+```
+
+A partir daqui, execute os demais comandos **na raiz do repositório**, salvo indicação contrária.
+
+### 2. Instalar as dependências
 
 ```bash
 npm ci
 ```
 
-### 2. Configurar as variáveis de ambiente
+### 3. Configurar as variáveis de ambiente
 
 ```bash
 cp .env.example .env
@@ -147,21 +156,21 @@ cp .env.example .env
 
 Edite `.env` e defina uma senha local em `POSTGRES_PASSWORD`. Não versione arquivos com credenciais.
 
-### 3. Iniciar o banco de desenvolvimento
+### 4. Iniciar o banco de desenvolvimento
 
 ```bash
 docker compose up -d db
 ```
 
-| Parâmetro | Valor padrão |
-| --- | --- |
-| Host | `127.0.0.1` |
-| Porta publicada | `5433` |
-| Banco | `medical_scheduling` |
-| Usuário | `medical_app` |
-| Senha | Configurada em `.env` |
+| Parâmetro       | Valor padrão          |
+| --------------- | --------------------- |
+| Host            | `127.0.0.1`           |
+| Porta publicada | `5433`                |
+| Banco           | `medical_scheduling`  |
+| Usuário         | `medical_app`         |
+| Senha           | Configurada em `.env` |
 
-### 4. Aplicar as migrations
+### 5. Aplicar as migrations
 
 ```bash
 npm run migration:run --workspace=backend
@@ -173,7 +182,7 @@ A estrutura do PostgreSQL é controlada por migrations do TypeORM; a opção `sy
 npm run migration:show --workspace=backend
 ```
 
-### 5. Importar os dados de referência
+### 6. Importar os dados de referência
 
 ```bash
 npm run seed:exams --workspace=backend
@@ -184,7 +193,7 @@ Os seeds importam **30 exames** de `challenge/dados/exames.csv`, preservando seu
 
 Ambos são idempotentes: podem ser executados novamente sem duplicar ou sobrescrever registros existentes. A importação dos médicos e turnos é transacional.
 
-### 6. Iniciar backend e frontend
+### 7. Iniciar backend e frontend
 
 Em um terminal:
 
@@ -198,9 +207,9 @@ Em outro terminal:
 npm run dev:web
 ```
 
-| Serviço | Endereço padrão |
-| --- | --- |
-| API NestJS | `http://localhost:3000` |
+| Serviço        | Endereço padrão         |
+| -------------- | ----------------------- |
+| API NestJS     | `http://localhost:3000` |
 | Frontend React | `http://localhost:5173` |
 
 Durante o desenvolvimento, o Vite encaminha as chamadas a `/api` para o backend por meio de seu proxy local.
@@ -220,13 +229,13 @@ npm run build --workspace=frontend
 
 ## API REST
 
-| Método | Endpoint | Finalidade |
-| --- | --- | --- |
-| `GET` | `/api/exams?search=...` | Listar ou pesquisar exames pelo nome |
-| `GET` | `/api/doctors` | Listar médicos |
-| `GET` | `/api/doctors/:id/availability?examId=...&date=...` | Consultar horários disponíveis |
-| `POST` | `/api/appointments` | Confirmar um agendamento |
-| `GET` | `/api/health` | Verificar conectividade da API com o PostgreSQL |
+| Método | Endpoint                                            | Finalidade                                      |
+| ------ | --------------------------------------------------- | ----------------------------------------------- |
+| `GET`  | `/api/exams?search=...`                             | Listar ou pesquisar exames pelo nome            |
+| `GET`  | `/api/doctors`                                      | Listar médicos                                  |
+| `GET`  | `/api/doctors/:id/availability?examId=...&date=...` | Consultar horários disponíveis                  |
+| `POST` | `/api/appointments`                                 | Confirmar um agendamento                        |
+| `GET`  | `/api/health`                                       | Verificar conectividade da API com o PostgreSQL |
 
 ### Swagger / OpenAPI
 
@@ -273,25 +282,18 @@ A resposta contém os identificadores dos médicos, necessários para consultar 
 curl "http://localhost:3000/api/doctors/1/availability?examId=17&date=2030-01-07"
 ```
 
-| Parâmetro | Local | Descrição |
-| --- | --- | --- |
-| `id` | URL | Identificador inteiro positivo do médico |
-| `examId` | Query string | Identificador inteiro positivo do exame |
-| `date` | Query string | Data no formato `YYYY-MM-DD` |
+| Parâmetro | Local        | Descrição                                |
+| --------- | ------------ | ---------------------------------------- |
+| `id`      | URL          | Identificador inteiro positivo do médico |
+| `examId`  | Query string | Identificador inteiro positivo do exame  |
+| `date`    | Query string | Data no formato `YYYY-MM-DD`             |
 
 O ID `1` é ilustrativo; consulte o ID real em `GET /api/doctors`.
 
 Exemplo **ilustrativo** de resposta para um turno das 08h às 12h e um exame de 40 minutos, sem agendamentos existentes:
 
 ```json
-[
-  "08:00",
-  "08:40",
-  "09:20",
-  "10:00",
-  "10:40",
-  "11:20"
-]
+["08:00", "08:40", "09:20", "10:00", "10:40", "11:20"]
 ```
 
 A API retorna horários no formato `HH:mm`, considerando a duração do exame, os turnos do médico, os agendamentos existentes e o instante atual. Quando não há horários disponíveis, retorna `200 OK` com `[]`.
@@ -311,12 +313,12 @@ curl -i -X POST "http://localhost:3000/api/appointments" \
   }'
 ```
 
-| Campo | Descrição |
-| --- | --- |
-| `patientName` | Nome do paciente, com até 160 caracteres |
-| `examId` | Identificador do exame |
-| `doctorId` | Identificador do médico |
-| `startAt` | Data e hora ISO 8601 com fuso explícito (`-03:00` ou `Z`) |
+| Campo         | Descrição                                                 |
+| ------------- | --------------------------------------------------------- |
+| `patientName` | Nome do paciente, com até 160 caracteres                  |
+| `examId`      | Identificador do exame                                    |
+| `doctorId`    | Identificador do médico                                   |
+| `startAt`     | Data e hora ISO 8601 com fuso explícito (`-03:00` ou `Z`) |
 
 O horário de término (`endAt`) é calculado **no backend** a partir da duração cadastrada para o exame. Em caso de sucesso, a API retorna `201 Created`, incluindo o ID da reserva, os dados do agendamento e a data de criação. Os instantes são serializados em UTC (`Z`); por exemplo, `08:00-03:00` corresponde a `11:00Z` no mesmo dia.
 
@@ -324,14 +326,14 @@ O horário de término (`endAt`) é calculado **no backend** a partir da duraç�
 
 A requisição também aceita o header opcional `Idempotency-Key`, detalhado a seguir.
 
-| Código HTTP | Situação |
-| --- | --- |
-| `201 Created` | Agendamento confirmado |
-| `400 Bad Request` | Dados de entrada ou header `Idempotency-Key` inválidos |
-| `404 Not Found` | Médico ou exame inexistente |
-| `409 Conflict` | Horário ocupado, conflito com outra reserva ou reutilização indevida de uma chave de idempotência |
-| `422 Unprocessable Entity` | Horário passado, fora do expediente ou fora da grade válida |
-| `429 Too Many Requests` | Limite de tentativas de agendamento excedido |
+| Código HTTP                | Situação                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------- |
+| `201 Created`              | Agendamento confirmado                                                                            |
+| `400 Bad Request`          | Dados de entrada ou header `Idempotency-Key` inválidos                                            |
+| `404 Not Found`            | Médico ou exame inexistente                                                                       |
+| `409 Conflict`             | Horário ocupado, conflito com outra reserva ou reutilização indevida de uma chave de idempotência |
+| `422 Unprocessable Entity` | Horário passado, fora do expediente ou fora da grade válida                                       |
+| `429 Too Many Requests`    | Limite de tentativas de agendamento excedido                                                      |
 
 ### Idempotência na criação de agendamentos
 
@@ -353,17 +355,17 @@ curl -i -X POST "http://localhost:3000/api/appointments" \
 
 O UUID acima é **apenas ilustrativo**. Para cada nova operação de agendamento, utilize uma chave nova; para repetir a **mesma operação com os mesmos dados**, reutilize a chave original.
 
-| Situação | Comportamento |
-| --- | --- |
-| Chave nova e agendamento válido | Cria a reserva e retorna `201 Created` |
-| Mesma chave e mesmos dados | Retorna `201 Created` com o **mesmo agendamento e ID**, sem nova inserção |
-| Mesma chave e dados diferentes | Retorna `409 Conflict` com o código `IDEMPOTENCY_KEY_REUSED` |
-| Chave ausente | Mantém o comportamento convencional de criação de agendamentos |
-| Chave com formato inválido | Retorna `400 Bad Request` |
+| Situação                        | Comportamento                                                             |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| Chave nova e agendamento válido | Cria a reserva e retorna `201 Created`                                    |
+| Mesma chave e mesmos dados      | Retorna `201 Created` com o **mesmo agendamento e ID**, sem nova inserção |
+| Mesma chave e dados diferentes  | Retorna `409 Conflict` com o código `IDEMPOTENCY_KEY_REUSED`              |
+| Chave ausente                   | Mantém o comportamento convencional de criação de agendamentos            |
+| Chave com formato inválido      | Retorna `400 Bad Request`                                                 |
 
 A chave é armazenada na coluna `appointments.idempotency_key` (UUID, aceita `NULL`), protegida por uma restrição `UNIQUE`. Para requisições com chave, a API utiliza **transação e advisory lock transacional do PostgreSQL** antes de consultar ou criar a reserva. Duas requisições simultâneas com a mesma chave são serializadas e podem receber o mesmo resultado.
 
-A idempotência **não substitui** a proteção contra horários sobrepostos: requisições com chaves diferentes ainda estão sujeitas à validação de disponibilidade e à *exclusion constraint* do PostgreSQL.
+A idempotência **não substitui** a proteção contra horários sobrepostos: requisições com chaves diferentes ainda estão sujeitas à validação de disponibilidade e à _exclusion constraint_ do PostgreSQL.
 
 #### Integração com o frontend
 
@@ -446,11 +448,11 @@ Essa proteção reduz abuso, mas não substitui mecanismos de verificação de i
 
 O projeto possui três níveis de testes:
 
-| Tipo | Ferramentas | Escopo |
-| --- | --- | --- |
-| Unitários e componentes | Vitest, React Testing Library, MSW | Regras de negócio, formulários e estados da interface |
-| E2E HTTP | Vitest, Supertest, PostgreSQL | Endpoints, persistência, validações e concorrência |
-| E2E no navegador | Playwright, Chromium, axe-core | Jornada real, idempotência, responsividade e acessibilidade |
+| Tipo                    | Ferramentas                        | Escopo                                                      |
+| ----------------------- | ---------------------------------- | ----------------------------------------------------------- |
+| Unitários e componentes | Vitest, React Testing Library, MSW | Regras de negócio, formulários e estados da interface       |
+| E2E HTTP                | Vitest, Supertest, PostgreSQL      | Endpoints, persistência, validações e concorrência          |
+| E2E no navegador        | Playwright, Chromium, axe-core     | Jornada real, idempotência, responsividade e acessibilidade |
 
 ### 1. Preparar o banco de testes
 
@@ -466,12 +468,12 @@ Configure `POSTGRES_PASSWORD` com a mesma senha local usada no `.env` e mantenha
 docker compose --profile test up -d db_test
 ```
 
-| Parâmetro | Valor |
-| --- | --- |
-| Host | `127.0.0.1` |
-| Porta publicada | `5434` |
-| Banco | `medical_scheduling_test` |
-| Volume | `postgres_test_data` |
+| Parâmetro       | Valor                     |
+| --------------- | ------------------------- |
+| Host            | `127.0.0.1`               |
+| Porta publicada | `5434`                    |
+| Banco           | `medical_scheduling_test` |
+| Volume          | `postgres_test_data`      |
 
 Aplique as mesmas migrations e seeds no ambiente isolado:
 
@@ -522,7 +524,7 @@ NODE_ENV=test npm exec --workspace=backend -- vitest run \
   test/appointments-concurrency.e2e-spec.ts
 ```
 
-Entre os cenários cobertos estão requisições concorrentes para o mesmo horário, sobreposições com durações diferentes, horários consecutivos, atendimentos simultâneos por médicos diferentes, a restrição `23P01` e o tratamento de deadlocks `40P01` do PostgreSQL.
+Os testes E2E cobrem requisições concorrentes para o mesmo horário, sobreposições com durações diferentes, horários consecutivos, atendimentos simultâneos por médicos diferentes e a restrição `23P01` do PostgreSQL. O tratamento de deadlocks `40P01` durante a gravação é validado em um teste unitário do serviço; a suíte E2E não provoca deliberadamente um deadlock no PostgreSQL.
 
 Os testes HTTP também cobrem idempotência, reaproveitamento de chaves, rate limiting, Request ID e o contrato OpenAPI dos cinco endpoints. Os testes de cabeçalhos de segurança verificam as respostas `200`, `400` e `404`. Testes específicos verificam o health check (200/503), a classificação dos logs e a sanitização de exceções inesperadas.
 

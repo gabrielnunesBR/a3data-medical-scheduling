@@ -154,6 +154,17 @@ describe('AppointmentsService', () => {
     expect(appointmentsRepository.save).not.toHaveBeenCalled();
   });
 
+  it('should reject an appointment that expires while availability is being checked', async () => {
+    availabilityService.findAvailableSlots.mockImplementationOnce(async () => {
+      vi.setSystemTime(new Date('2030-01-07T12:21:00Z'));
+      return ['09:20'];
+    });
+
+    await expect(service.create(dto)).rejects.toThrow(UnprocessableEntityException);
+
+    expect(appointmentsRepository.save).not.toHaveBeenCalled();
+  });
+
   it('should reject times with seconds', async () => {
     await expect(
       service.create({

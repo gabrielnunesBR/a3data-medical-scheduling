@@ -10,15 +10,15 @@ Criar um fluxo de agendamento de exames de imagem claro, acessível, responsivo 
 
 ## Evidências e interpretação
 
-| Referência | Evidência observada | Implicação no produto |
-| --- | --- | --- |
-| Rede D'Or, campanha de agendamento | Seleção de exame, data/horário, dados do paciente e revisão antes da confirmação | Fluxo progressivo e revisão final |
-| Fleury, agendamento digital | Escolha dos procedimentos, local, dia e horário | Selecionar opções relevantes em uma sequência orientada; não criar campos de unidade ou convênio ausentes do desafio |
-| Doctoralia | Escolha de profissional, dia e horário | Disponibilidade claramente vinculada ao médico |
-| NHS Service Manual | Labels explícitas, semântica, mensagens de erro ligadas aos inputs, foco visível | Acessibilidade como requisito de construção, não correção posterior |
-| NN/g, Date Input | Calendário é adequado para datas próximas; preservar escolhas e reduzir erros | Calendário pt-BR, dias passados indisponíveis, evitar digitação ambígua |
-| Material Design 3 | Cores organizadas por funções e tokens semânticos | Tokens de primária, superfície, texto, borda, erro e seleção |
-| WCAG 2.2 | Contraste mínimo, navegação por teclado e tamanho mínimo dos alvos | Objetivo WCAG 2.2 AA e controles principais de 44–48 px |
+| Referência                         | Evidência observada                                                              | Implicação no produto                                                                                                |
+| ---------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Rede D'Or, campanha de agendamento | Seleção de exame, data/horário, dados do paciente e revisão antes da confirmação | Fluxo progressivo e revisão final                                                                                    |
+| Fleury, agendamento digital        | Escolha dos procedimentos, local, dia e horário                                  | Selecionar opções relevantes em uma sequência orientada; não criar campos de unidade ou convênio ausentes do desafio |
+| Doctoralia                         | Escolha de profissional, dia e horário                                           | Disponibilidade claramente vinculada ao médico                                                                       |
+| NHS Service Manual                 | Labels explícitas, semântica, mensagens de erro ligadas aos inputs, foco visível | Acessibilidade como requisito de construção, não correção posterior                                                  |
+| NN/g, Date Input                   | Calendário é adequado para datas próximas; preservar escolhas e reduzir erros    | Calendário pt-BR, dias passados indisponíveis, evitar digitação ambígua                                              |
+| Material Design 3                  | Cores organizadas por funções e tokens semânticos                                | Tokens de primária, superfície, texto, borda, erro e seleção                                                         |
+| WCAG 2.2                           | Contraste mínimo, navegação por teclado e tamanho mínimo dos alvos               | Objetivo WCAG 2.2 AA e controles principais de 44–48 px                                                              |
 
 ## Jornada de agendamento
 
@@ -40,20 +40,20 @@ Regras de consistência: mudar exame limpa horário escolhido; mudar médico ou 
 
 ## Tokens semânticos
 
-| Token | Hex | Uso |
-| --- | --- | --- |
-| `brand` | `#0F766E` | ação primária, seleção e destaques |
-| `brand-strong` | `#115E59` | hover/ênfase |
-| `brand-soft` | `#CCFBF1` | superfície selecionada |
-| `brand-ink` | `#134E4A` | texto sobre teal claro |
-| `canvas` | `#F6F9FC` | fundo geral |
-| `surface` | `#FFFFFF` | cartões e campos |
-| `ink` | `#172B4D` | texto principal |
-| `muted-ink` | `#475569` | texto secundário |
-| `line` | `#D9E2EC` | bordas discretas; não usar como único indicador de controle |
-| `danger` | `#B42318` | mensagens de erro |
-| `success` | `#166534` | sucesso |
-| `focus` | `#2563EB` | anel de foco |
+| Token          | Hex       | Uso                                                         |
+| -------------- | --------- | ----------------------------------------------------------- |
+| `brand`        | `#0F766E` | ação primária, seleção e destaques                          |
+| `brand-strong` | `#115E59` | hover/ênfase                                                |
+| `brand-soft`   | `#CCFBF1` | superfície selecionada                                      |
+| `brand-ink`    | `#134E4A` | texto sobre teal claro                                      |
+| `canvas`       | `#F6F9FC` | fundo geral                                                 |
+| `surface`      | `#FFFFFF` | cartões e campos                                            |
+| `ink`          | `#172B4D` | texto principal                                             |
+| `muted-ink`    | `#475569` | texto secundário                                            |
+| `line`         | `#D9E2EC` | bordas discretas; não usar como único indicador de controle |
+| `danger`       | `#B42318` | mensagens de erro                                           |
+| `success`      | `#166534` | sucesso                                                     |
+| `focus`        | `#2563EB` | anel de foco                                                |
 
 Contrastes calculados: branco/brand = 5,47:1; branco/brand-strong = 7,58:1; ink/branco = 14,10:1; muted-ink/canvas = 7,17:1; danger/branco = 6,57:1. Testar outros pares na implementação.
 

@@ -90,9 +90,10 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
 
             <dd className="mt-1 font-semibold text-ink">
               {formattedDate}, às {formattedTime}
+              <span className="mt-1 block text-xs font-normal text-muted-ink">
+                Horário de Brasília
+              </span>
             </dd>
-
-            <dd className="mt-1 text-xs text-muted-ink">Horário de Brasília</dd>
           </div>
         </dl>
       </div>
