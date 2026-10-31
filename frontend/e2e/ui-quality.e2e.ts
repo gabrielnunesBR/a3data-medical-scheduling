@@ -201,15 +201,7 @@ test.describe('UI quality', () => {
 
     await expect(skipLink).toBeAttached();
 
-    const initialFocus = await page.evaluate('document.activeElement?.outerHTML');
-
-    console.log('Initial focus:', initialFocus);
-
     await page.keyboard.press('Tab');
-
-    const focusAfterTab = await page.evaluate('document.activeElement?.outerHTML');
-
-    console.log('Focus after Tab:', focusAfterTab);
 
     await expect(skipLink).toBeFocused();
 

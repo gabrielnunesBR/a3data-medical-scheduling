@@ -53,7 +53,7 @@ Regras de consistência: mudar exame limpa horário escolhido; mudar médico ou 
 | `line`         | `#D9E2EC` | bordas discretas; não usar como único indicador de controle |
 | `danger`       | `#B42318` | mensagens de erro                                           |
 | `success`      | `#166534` | sucesso                                                     |
-| `focus`        | `#2563EB` | anel de foco                                                |
+| `focus`        | `#0F766E` | anel de foco                                                |
 
 Contrastes calculados: branco/brand = 5,47:1; branco/brand-strong = 7,58:1; ink/branco = 14,10:1; muted-ink/canvas = 7,17:1; danger/branco = 6,57:1. Testar outros pares na implementação.
 

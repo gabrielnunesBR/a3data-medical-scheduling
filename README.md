@@ -560,7 +560,9 @@ Os agendamentos criados nos testes são identificados individualmente e removido
 
 ```bash
 npm run build
+npm run lint --workspace=backend
 npm run lint --workspace=frontend
+npx prettier . --check
 ```
 
 O projeto compartilha uma configuração do Prettier para padronizar código no frontend e no backend.
