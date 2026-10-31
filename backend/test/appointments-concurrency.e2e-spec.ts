@@ -245,4 +245,45 @@ describe('Appointments concurrency (e2e)', () => {
       await repository.countBy({ patientName }),
     ).toBe(1);
   });
+
+  it('should allow different doctors to book the same time', async () => {
+    const rafael = await dataSource.getRepository(Doctor).findOneBy({
+      crm: 'CRM-MG 22222',
+    });
+
+    if (!rafael) {
+      throw new Error('Doctor seed is missing.');
+    }
+
+    const helenaBooking = appointmentBody('09:20', 1);
+
+    const rafaelBooking = {
+      ...appointmentBody('09:20', 1),
+      doctorId: rafael.id,
+    };
+
+    const responses = await Promise.all([
+      sendAppointment(helenaBooking),
+      sendAppointment(rafaelBooking),
+    ]);
+
+    expect(responses.map((response) => response.status)).toEqual([
+      201,
+      201,
+    ]);
+
+    const appointments = await dataSource
+      .getRepository(Appointment)
+      .findBy({ patientName });
+
+    expect(appointments).toHaveLength(2);
+
+    expect(
+      new Set(appointments.map((appointment) => appointment.doctorId)),
+    ).toEqual(new Set([doctorId, rafael.id]));
+
+    expect(appointments[0].startAt).toEqual(
+      appointments[1].startAt,
+    );
+  });
 });
