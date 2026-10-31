@@ -22,13 +22,27 @@ export function httpRequestLogger(
 
   response.setHeader('X-Request-ID', requestId);
 
-  response.once('finish', () => {
-    const metadata = {
+  let completed = false;
+
+  function getMetadata() {
+    return {
       requestId,
       method: request.method ?? 'UNKNOWN',
       route: typeof request.route?.path === 'string' ? request.route.path : 'unmatched',
-      statusCode: response.statusCode,
       durationMs: Math.round((performance.now() - startedAt) * 100) / 100,
+    };
+  }
+
+  response.once('finish', () => {
+    if (completed) {
+      return;
+    }
+
+    completed = true;
+
+    const metadata = {
+      ...getMetadata(),
+      statusCode: response.statusCode,
     };
 
     if (response.statusCode >= 500) {
@@ -42,6 +56,18 @@ export function httpRequestLogger(
     }
 
     logger.log('http_request_completed', metadata);
+  });
+
+  response.once('close', () => {
+    if (completed) {
+      return;
+    }
+
+    completed = true;
+    logger.warn('http_request_aborted', {
+      ...getMetadata(),
+      statusCode: null,
+    });
   });
 
   next();

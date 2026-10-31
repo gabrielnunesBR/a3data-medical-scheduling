@@ -142,7 +142,7 @@ describe('HTTP request logger', () => {
       ),
     );
 
-    // O header é definido antes de entregar a requisição ao NestJS.
+    // The header is set before the request reaches NestJS.
     expect(next).toHaveBeenCalledOnce();
 
     const requestId = response.setHeaderMock.mock.calls[0]?.[1];
@@ -178,5 +178,48 @@ describe('HTTP request logger', () => {
 
     firstResponse.emit('finish');
     secondResponse.emit('finish');
+  });
+
+  it('should log an aborted response without exposing patient data', () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const log = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+
+    const response = createResponse(200);
+
+    httpRequestLogger(createRequest('/api/appointments'), response, vi.fn());
+
+    response.emit('close');
+
+    expect(warn).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledWith(
+      'http_request_aborted',
+      expect.objectContaining({
+        method: 'POST',
+        route: '/api/appointments',
+        statusCode: null,
+        durationMs: expect.any(Number),
+        requestId: expect.any(String),
+      }),
+    );
+
+    const loggedContent = JSON.stringify(warn.mock.calls);
+    expect(loggedContent).not.toContain('Paciente Sigiloso');
+    expect(loggedContent).not.toContain('secret-idempotency-key');
+
+    response.emit('finish');
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it('should not log an aborted response after a completed request', () => {
+    const warn = vi.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+    const log = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+    const response = createResponse(200);
+
+    httpRequestLogger(createRequest('/api/appointments'), response, vi.fn());
+    response.emit('finish');
+    response.emit('close');
+
+    expect(log).toHaveBeenCalledOnce();
+    expect(warn).not.toHaveBeenCalled();
   });
 });

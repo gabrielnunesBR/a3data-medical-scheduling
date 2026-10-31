@@ -328,7 +328,7 @@ test('handles a real HTTP 409 and refreshes available slots', async ({ page, req
 
   await goToConfirmation(page, fixture);
 
-  // Outra requisição reserva o horário após o paciente chegar à confirmação.
+  // Another request books the slot after the patient reaches the confirmation step.
   const blockingResponse = await request.post('/api/appointments', {
     data: {
       patientName: firstPatient,
@@ -401,7 +401,7 @@ test('recovers a lost response without duplicating the appointment', async ({ pa
     if (!firstResponseLost) {
       firstResponseLost = true;
 
-      // Persiste a reserva no backend, mas simula a perda da resposta.
+      // Persist the booking in the backend, but simulate a lost response.
       const response = await route.fetch();
       expect(response.status()).toBe(201);
       await route.abort('failed');
@@ -433,7 +433,7 @@ test('recovers a lost response without duplicating the appointment', async ({ pa
   expect(initiallySaved.rows).toHaveLength(1);
   const originalId = initiallySaved.rows[0].id;
 
-  // O usuário repete manualmente a mesma operação.
+  // The user manually retries the same operation.
   await page
     .getByRole('button', {
       name: 'Confirmar agendamento',
@@ -488,17 +488,17 @@ test('keeps focus on active steps and supports keyboard navigation', async ({ pa
     name: 'Nome completo do paciente',
   });
 
-  // O primeiro Tab deve levar o foco do título ao campo do paciente.
+  // The first Tab moves focus from the heading to the patient name field.
   await page.keyboard.press('Tab');
 
   await expect(patientName).toBeFocused();
 
-  // Preenchimento utilizando somente o teclado.
+  // Enter the patient name using only the keyboard.
   await page.keyboard.type('Paciente Teste Teclado');
 
   await expect(patientName).toHaveValue('Paciente Teste Teclado');
 
-  // O próximo Tab deve levar o foco ao botão Voltar.
+  // The next Tab moves focus to the Back button.
   await page.keyboard.press('Tab');
 
   await expect(
@@ -508,7 +508,7 @@ test('keeps focus on active steps and supports keyboard navigation', async ({ pa
     }),
   ).toBeFocused();
 
-  // O próximo Tab deve alcançar o botão de confirmação.
+  // The following Tab moves focus to the confirmation button.
   await page.keyboard.press('Tab');
 
   await expect(

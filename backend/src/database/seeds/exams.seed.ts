@@ -26,14 +26,14 @@ async function main(): Promise<void> {
   });
 
   if (records.length === 0) {
-    throw new Error('O catálogo de exames está vazio.');
+    throw new Error('The exam catalog is empty.');
   }
 
   const exams = records.map((record, index) => {
     const result = examCsvSchema.safeParse(record);
 
     if (!result.success) {
-      throw new Error(`CSV inválido na linha ${index + 2}: ${result.error.message}`);
+      throw new Error(`Invalid CSV record at line ${index + 2}: ${result.error.message}`);
     }
 
     return {
@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   const uniqueIds = new Set(exams.map((exam) => exam.id));
 
   if (uniqueIds.size !== exams.length) {
-    throw new Error('O CSV contém IDs de exames duplicados.');
+    throw new Error('The CSV contains duplicate exam IDs.');
   }
 
   try {
@@ -61,8 +61,8 @@ async function main(): Promise<void> {
       .returning('id')
       .execute();
 
-    console.log(`${exams.length} exames processados.`);
-    console.log(`${result.raw.length} exames inseridos.`);
+    console.log(`${exams.length} exams processed.`);
+    console.log(`${result.raw.length} exams inserted.`);
   } finally {
     if (migrationDataSource.isInitialized) {
       await migrationDataSource.destroy();
@@ -71,6 +71,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error('Falha ao importar exames:', error);
+  console.error('Failed to import exams:', error);
   process.exitCode = 1;
 });

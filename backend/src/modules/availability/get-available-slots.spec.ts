@@ -223,7 +223,7 @@ describe('getAvailableSlots', () => {
 
     expect(result.includes('10:00')).toBe(shouldInclude);
 
-    // O próximo horário ainda deve estar disponível.
+    // The next time slot must still be available.
     expect(result).toContain('10:40');
   });
 
@@ -240,13 +240,13 @@ describe('getAvailableSlots', () => {
       ],
       occupiedIntervals: [],
 
-      // Terça-feira, 00:00 UTC.
-      // Ainda é segunda-feira, 21:00 em Brasília.
+      // Tuesday, 00:00 UTC.
+      // It is still Monday, 21:00 in Brasília.
       now: new Date('2026-11-03T00:00:00.000Z'),
     });
 
-    // O último horário do turno começa às 21:20
-    // e termina às 22:00 no horário da clínica.
+    // The last slot of the shift starts at 21:20
+    // and ends at 22:00 in the clinic time zone.
     expect(result).toEqual(['21:20']);
   });
 });

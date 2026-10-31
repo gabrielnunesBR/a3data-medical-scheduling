@@ -121,6 +121,38 @@ describe('Booking confirmation', () => {
     ).toHaveAttribute('aria-invalid', 'true');
   });
 
+  it('should accept a one-character patient name, matching the API validation', async () => {
+    let submitted: CreateAppointmentInput | null = null;
+
+    server.use(
+      http.post('*/api/appointments', async ({ request }) => {
+        const body = (await request.json()) as CreateAppointmentInput;
+        submitted = body;
+
+        return HttpResponse.json(
+          {
+            id: 72,
+            ...body,
+            endAt: new Date(new Date(body.startAt).getTime() + 40 * 60_000).toISOString(),
+            createdAt: '2030-01-01T12:00:00.000Z',
+          },
+          { status: 201 },
+        );
+      }),
+    );
+
+    const user = await goToConfirmation();
+
+    await user.type(screen.getByRole('textbox', { name: 'Nome completo do paciente' }), 'A');
+
+    await user.click(screen.getByRole('button', { name: 'Confirmar agendamento' }));
+
+    expect(
+      await screen.findByRole('heading', { name: 'Agendamento confirmado!' }),
+    ).toBeInTheDocument();
+    expect(submitted).toMatchObject({ patientName: 'A' });
+  });
+
   it('should show only one appointment summary', async () => {
     await goToConfirmation();
 

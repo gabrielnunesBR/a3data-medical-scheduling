@@ -98,7 +98,7 @@ async function main(): Promise<void> {
         const doctorId = doctorIds.get(crm);
 
         if (doctorId === undefined) {
-          throw new Error(`Médico não encontrado: ${crm}`);
+          throw new Error(`Doctor not found: ${crm}`);
         }
 
         return shifts.map((shift) => ({
@@ -122,9 +122,9 @@ async function main(): Promise<void> {
       };
     });
 
-    console.log(`${doctors.length} médicos processados.`);
-    console.log(`${result.doctorsInserted} médicos inseridos.`);
-    console.log(`${result.shiftsInserted} turnos inseridos.`);
+    console.log(`${doctors.length} doctors processed.`);
+    console.log(`${result.doctorsInserted} doctors inserted.`);
+    console.log(`${result.shiftsInserted} shifts inserted.`);
   } finally {
     if (migrationDataSource.isInitialized) {
       await migrationDataSource.destroy();
@@ -133,6 +133,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error('Falha ao importar médicos e turnos:', error);
+  console.error('Failed to import doctors and shifts:', error);
   process.exitCode = 1;
 });

@@ -128,7 +128,7 @@ test.describe('UI quality', () => {
       const diagnostics = await getLayoutDiagnostics(page, viewport.width);
 
       if (viewport.width === 320 && diagnostics.documentScrollWidth > viewport.width + 1) {
-        console.log('Diagnóstico de responsividade:', JSON.stringify(diagnostics, null, 2));
+        console.log('Responsive layout diagnostics:', JSON.stringify(diagnostics, null, 2));
       }
 
       expect(
@@ -203,13 +203,13 @@ test.describe('UI quality', () => {
 
     const initialFocus = await page.evaluate('document.activeElement?.outerHTML');
 
-    console.log('Foco inicial:', initialFocus);
+    console.log('Initial focus:', initialFocus);
 
     await page.keyboard.press('Tab');
 
     const focusAfterTab = await page.evaluate('document.activeElement?.outerHTML');
 
-    console.log('Foco após Tab:', focusAfterTab);
+    console.log('Focus after Tab:', focusAfterTab);
 
     await expect(skipLink).toBeFocused();
 

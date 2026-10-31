@@ -1,30 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { CalendarDays, ChevronLeft, ScanLine, Search, ShieldCheck } from 'lucide-react';
 
 import { BookingProgress } from './components/booking-progress';
-import type { Doctor } from './features/booking/availability.api';
-import type { Appointment } from './features/booking/appointments.api';
 import { formatClinicDate } from './features/booking/booking-dates';
 import { BookingConfirmation } from './features/booking/booking-confirmation';
 import { BookingSuccess } from './features/booking/booking-success';
+import { useBookingFlow, type BookingStep } from './features/booking/use-booking-flow';
 import { DoctorAvailability } from './features/booking/doctor-availability';
 import { ExamSearch } from './features/exams/exam-search';
-import type { Exam } from './features/exams/exams.api';
-
-type BookingStep = 1 | 2 | 3 | 'success';
 
 function App() {
-  const [currentStep, setCurrentStep] = useState<BookingStep>(1);
-
-  const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
-  const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
-
-  const [confirmedAppointment, setConfirmedAppointment] = useState<Appointment | null>(null);
-
-  const [availabilityNotice, setAvailabilityNotice] = useState<string | null>(null);
+  const {
+    currentStep,
+    setCurrentStep,
+    selectedExam,
+    selectedDoctor,
+    selectedDate,
+    selectedTime,
+    confirmedAppointment,
+    availabilityNotice,
+    handleExamChange,
+    handleDoctorChange,
+    handleDateChange,
+    handleTimeChange,
+    handleConflict,
+    handleBooked,
+    handleNewBooking,
+  } = useBookingFlow();
 
   const previousStepRef = useRef<BookingStep>(currentStep);
 
@@ -37,60 +40,6 @@ function App() {
 
     document.getElementById('booking-step-heading')?.focus();
   }, [currentStep]);
-
-  function handleExamChange(exam: Exam) {
-    if (selectedExam?.id !== exam.id) {
-      setSelectedDoctor(null);
-      setSelectedDate(null);
-      setSelectedTime(null);
-    }
-
-    setSelectedExam(exam);
-    setAvailabilityNotice(null);
-  }
-
-  function handleDoctorChange(doctor: Doctor | null) {
-    setSelectedDoctor(doctor);
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setAvailabilityNotice(null);
-  }
-
-  function handleDateChange(date: string | null) {
-    setSelectedDate(date);
-    setSelectedTime(null);
-    setAvailabilityNotice(null);
-  }
-
-  function handleTimeChange(time: string | null) {
-    setSelectedTime(time);
-    setAvailabilityNotice(null);
-  }
-
-  function handleConflict() {
-    setSelectedTime(null);
-
-    setAvailabilityNotice(
-      'Esse horário acabou de ser reservado. Escolha outro horário disponível.',
-    );
-
-    setCurrentStep(2);
-  }
-
-  function handleBooked(appointment: Appointment) {
-    setConfirmedAppointment(appointment);
-    setCurrentStep('success');
-  }
-
-  function handleNewBooking() {
-    setCurrentStep(1);
-    setSelectedExam(null);
-    setSelectedDoctor(null);
-    setSelectedDate(null);
-    setSelectedTime(null);
-    setConfirmedAppointment(null);
-    setAvailabilityNotice(null);
-  }
 
   return (
     <div className="min-h-screen bg-canvas">

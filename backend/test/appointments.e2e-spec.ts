@@ -162,10 +162,10 @@ describe('Appointments API (e2e)', () => {
       .plus({ days: 1 })
       .toISODate();
 
-    // O atendimento pertence à segunda-feira no horário da clínica.
+    // The appointment falls on Monday in the clinic time zone.
     expect(DateTime.fromJSDate(expectedStart).setZone(CLINIC_TIME_ZONE).toISODate()).toBe(monday);
 
-    // Em UTC, o início pertence à terça-feira.
+    // In UTC, the appointment starts on Tuesday.
     expect(DateTime.fromJSDate(expectedStart).toUTC().toISODate()).toBe(expectedUtcDate);
 
     const availabilityBefore = await request(app.getHttpServer())
@@ -209,11 +209,11 @@ describe('Appointments API (e2e)', () => {
       })
       .expect(200);
 
-    // O horário reservado não pode continuar disponível.
+    // The booked time slot must no longer be available.
     expect(availabilityAfter.body).not.toContain('21:20');
 
-    // O horário imediatamente anterior termina às 21:20.
-    // Não existe sobreposição entre os dois intervalos.
+    // The immediately preceding slot ends at 21:20.
+    // The two intervals do not overlap.
     expect(availabilityAfter.body).toContain('20:40');
   });
 
