@@ -23,6 +23,13 @@ O fluxo principal está implementado no **backend NestJS** e no **frontend React
   </tr>
 </table>
 
+### Swagger — documentação interativa da API
+
+![Swagger UI com os cinco endpoints documentados da API de agendamento](docs/screenshots/api-swagger.png)
+
+A documentação interativa da API está disponível em
+[`/api/docs`](http://localhost:3000/api/docs) com o backend em execução.
+
 As capturas mostram a jornada de agendamento em diferentes tamanhos de tela.
 
 ## Tecnologias
