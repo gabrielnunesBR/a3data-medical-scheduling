@@ -7,6 +7,7 @@ import { envSchema } from './config/env.schema.js';
 import { ExamsModule } from './modules/exams/exams.module.js';
 import { DoctorsModule } from './modules/doctors/doctors.module.js';
 import { AvailabilityModule } from './modules/availability/availability.module.js';
+import { AppointmentsModule } from './modules/appointments/appointments.module.js';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AvailabilityModule } from './modules/availability/availability.module.j
     ExamsModule,
     DoctorsModule,
     AvailabilityModule,
+    AppointmentsModule,
   ],
 })
 export class AppModule {}
