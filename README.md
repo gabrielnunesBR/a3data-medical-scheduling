@@ -271,6 +271,98 @@ Também existe uma restrição `CHECK (start_at < end_at)` para garantir a valid
 
 O backend utiliza **Vitest** para testes unitários e **Supertest** para testes HTTP E2E. Os testes que acessam o PostgreSQL utilizam um banco separado do ambiente de desenvolvimento.
 
+### Testes E2E no navegador
+
+O frontend utiliza Playwright com Chromium para validar
+a jornada real de agendamento, integrando React, NestJS
+e PostgreSQL.
+
+Os testes verificam:
+
+- Busca e seleção de exames.
+- Seleção de médico, data e horário.
+- Revisão e confirmação de agendamentos.
+- Persistência real no PostgreSQL.
+- Atualização da disponibilidade após uma reserva.
+- Tratamento de conflitos HTTP 409.
+
+#### Executar
+
+Inicie o banco de testes:
+
+    docker compose --profile test up -d db_test
+
+Execute os testes:
+
+    npm run test:browser --workspace=frontend
+
+Para acompanhar o navegador:
+
+    npm run test:browser --workspace=frontend -- --headed
+
+O Playwright inicia automaticamente o frontend na porta
+5174 e a API de testes na porta 3100.
+
+As operações de escrita utilizam exclusivamente o banco
+medical_scheduling_test, na porta 5434.
+
+Os agendamentos criados pelos testes são identificados
+individualmente e removidos após cada cenário.
+```
+
+## 8. Commit
+
+Depois de validar:
+
+```bash
+git status
+git diff --check
+```
+
+Em seguida:
+
+```bash
+git add \
+  frontend/e2e/booking-completion.e2e.ts \
+  frontend/e2e/test-database.ts \
+  frontend/tsconfig.node.json \
+  frontend/package.json \
+  package-lock.json \
+  README.md
+
+git commit -m "test: verify complete booking flow with Playwright"
+
+git push
+```
+
+## Checklist da Task 7
+
+{@body const tasks=["Dependências pg e @types/pg instaladas","Cliente PostgreSQL de testes criado com proteção de ambiente","Teste de agendamento pelo Chromium implementado","Persistência confirmada diretamente no PostgreSQL","Data, horário, exame e médico persistidos corretamente","Teste de conflito HTTP 409 implementado","Lista de disponibilidade atualizada após o conflito","Limpeza dos registros de teste funcionando","Três testes Playwright passando","TypeScript, Vitest, build e lint passando","README atualizado e commit realizado"]}
+{@body const [done,setDone]=DIL.useState([])}
+<box border radius="lg" padding={3} gap={2}>
+  <row align="center" justify="between">
+    **Sprint 4 — Task 7**
+    <text color="secondary" size="xs" tabularNums>{done.length}/{tasks.length}</text>
+  </row>
+  {#each tasks as task}
+    <checkbox key={task} checked={done.includes(task)} onChange={value=>setDone(previous=>value?[...previous,task]:previous.filter(x=>x!==task))} lineThrough={false}>{task}</checkbox>
+  {/each}
+</box>
+
+---
+
+## Próxima etapa — Revisão de qualidade para entrega
+
+Com estes testes passando, teremos comprovado o fluxo completo com navegador, backend e banco reais, incluindo a recuperação de um conflito de reserva.
+
+Antes de acrescentar funcionalidades opcionais, recomendo uma revisão final em três frentes: responsividade e acessibilidade da interface, segurança e confiabilidade da API, e experiência de instalação para o avaliador.
+
+Também revisitaremos dois pontos importantes para uma aplicação com pretensão de produção: **rate limiting no endpoint público de agendamento e idempotência das requisições de criação**.
+
+Não implementaremos esses incrementos automaticamente; vamos avaliar custo, risco e aderência ao desafio.
+
+**Por enquanto, conclua esta Task 7.** Depois de validarmos os testes reais, teremos uma base sólida para decidir quais melhorias adicionais merecem entrar antes da entrega à A3Data.
+
 ### Testes unitários
 
 ```bash

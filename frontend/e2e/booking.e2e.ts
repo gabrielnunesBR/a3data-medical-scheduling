@@ -4,7 +4,7 @@ import { TZDate } from 'react-day-picker';
 import {
   CLINIC_TIME_ZONE,
   toClinicDate,
-} from '../src/features/booking/booking-dates';
+} from '../src/features/booking/booking-dates.js';
 
 type Exam = {
   id: number;

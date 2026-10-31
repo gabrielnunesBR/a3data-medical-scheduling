@@ -8,11 +8,17 @@ export async function fetchExams(
   search: string,
   signal?: AbortSignal,
 ): Promise<Exam[]> {
-  const url = new URL('/api/exams', window.location.origin);
+  const params = new URLSearchParams();
 
   if (search) {
-    url.searchParams.set('search', search);
+    params.set('search', search);
   }
+
+  const query = params.toString();
+
+  const url = query
+    ? `/api/exams?${query}`
+    : '/api/exams';
 
   const response = await fetch(url, { signal });
 
