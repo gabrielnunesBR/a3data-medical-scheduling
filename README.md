@@ -89,6 +89,7 @@ O fluxo é dividido em seleção de exame, escolha de médico/data/horário, rev
 - Proteção contra agendamentos simultâneos sobrepostos no PostgreSQL.
 - Fluxo web responsivo em **português brasileiro**, com revisão e confirmação do agendamento.
 - Comprovante na tela de sucesso com opção de imprimir/salvar em PDF pelo navegador e copiar o número da reserva.
+- Exportação pontual do compromisso para o Google Calendar (link pré-preenchido) ou arquivo `.ics` compatível com outros calendários.
 - Limitação de requisições ao endpoint público de criação de agendamentos.
 - Suporte a chaves de idempotência para recuperar reservas já confirmadas sem duplicá-las.
 - Endpoint de saúde da API com verificação de conectividade do PostgreSQL.
@@ -98,6 +99,12 @@ O fluxo é dividido em seleção de exame, escolha de médico/data/horário, rev
 O comprovante pode ser impresso ou salvo como PDF **após a confirmação**, enquanto a tela de sucesso
 estiver aberta. Não há consulta pública de comprovantes por número do agendamento; a aplicação não oferece
 recuperação após recarregar a página.
+
+A exportação para calendário também fica disponível **após a confirmação**, enquanto a tela de sucesso
+estiver aberta. O Google Calendar abre uma nova guia com os dados do evento preenchidos, mas o paciente
+deve confirmar o salvamento. O arquivo `.ics` pode ser importado em aplicativos compatíveis. Por privacidade,
+o evento utiliza um título genérico e não inclui nome do paciente nem tipo de exame. A exportação não
+cria sincronização contínua com o agendamento.
 
 ## Estrutura do projeto
 

@@ -1,11 +1,20 @@
 import { useState } from 'react';
 
-import { CalendarCheck2, CheckCircle2, Copy, Printer } from 'lucide-react';
+import {
+  CalendarCheck2,
+  CalendarPlus,
+  CheckCircle2,
+  Copy,
+  Download,
+  ExternalLink,
+  Printer,
+} from 'lucide-react';
 
 import type { Exam } from '../exams/exams.api';
 import type { Doctor } from './availability.api';
 import type { Appointment } from './appointments.api';
 import { CLINIC_TIME_ZONE } from './booking-dates';
+import { buildGoogleCalendarUrl, buildICalendarFile } from './calendar-export';
 
 type BookingSuccessProps = {
   appointment: Appointment;
@@ -31,6 +40,7 @@ const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
 
 export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: BookingSuccessProps) {
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const googleCalendarUrl = buildGoogleCalendarUrl(appointment);
 
   const startAt = new Date(appointment.startAt);
   const endAt = new Date(appointment.endAt);
@@ -51,6 +61,22 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
     } catch {
       setCopyFeedback('Não foi possível copiar. Selecione o número e copie manualmente.');
     }
+  }
+
+  function handleDownloadCalendar() {
+    const calendar = buildICalendarFile(appointment);
+    const blob = new Blob([calendar], { type: 'text/calendar;charset=utf-8' });
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = blobUrl;
+    link.download = `agendamento-${appointment.id}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    // Keep the object URL available long enough for the browser to start downloading.
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1_000);
   }
 
   return (
@@ -202,6 +228,58 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
           <p>Guarde este comprovante para consultar os dados da sua reserva.</p>
         </div>
       </div>
+
+      <section
+        className="mt-6 rounded-xl border border-line bg-white p-5 text-left sm:p-6"
+        aria-labelledby="add-to-calendar-heading"
+      >
+        <div className="flex items-center gap-2">
+          <CalendarPlus size={20} className="text-brand-strong" aria-hidden="true" />
+          <h3 id="add-to-calendar-heading" className="font-semibold text-ink">
+            Adicione à sua agenda
+          </h3>
+        </div>
+
+        <p className="mt-2 text-sm text-muted-ink">
+          Abra o evento no Google Calendar para salvar ou baixe o arquivo para importar em outro
+          aplicativo de calendário.
+        </p>
+
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <a
+            href={googleCalendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={[
+              'inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl',
+              'bg-brand px-4 text-center text-sm font-semibold text-white',
+              'hover:bg-brand-strong',
+            ].join(' ')}
+          >
+            <CalendarPlus size={18} aria-hidden="true" />
+            Google Calendar
+            <ExternalLink size={15} aria-hidden="true" />
+            <span className="sr-only"> (abre em uma nova guia)</span>
+          </a>
+
+          <button
+            type="button"
+            onClick={handleDownloadCalendar}
+            className={[
+              'inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl',
+              'border border-brand px-4 text-sm font-semibold text-brand-strong',
+              'hover:bg-brand-subtle',
+            ].join(' ')}
+          >
+            <Download size={18} aria-hidden="true" />
+            Baixar arquivo .ics
+          </button>
+        </div>
+
+        <p className="mt-3 text-xs text-muted-ink">
+          Para proteger sua privacidade, o evento não inclui o nome do paciente nem o tipo de exame.
+        </p>
+      </section>
 
       <div
         className={[

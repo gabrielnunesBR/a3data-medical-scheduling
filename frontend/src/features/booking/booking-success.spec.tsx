@@ -130,6 +130,19 @@ describe('Booking receipt', () => {
     );
   });
 
+  it('should offer a private calendar event and an ICS download after confirmation', () => {
+    renderSuccess();
+
+    const googleCalendar = screen.getByRole('link', { name: /Google Calendar/ });
+    const url = new URL(googleCalendar.getAttribute('href') ?? '');
+
+    expect(googleCalendar).toHaveAttribute('target', '_blank');
+    expect(googleCalendar).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(url.searchParams.get('dates')).toBe('20261102T122000Z/20261102T130000Z');
+    expect(screen.getByRole('button', { name: 'Baixar arquivo .ics' })).toBeInTheDocument();
+    expect(screen.getByText(/o evento não inclui nome do paciente/i)).toBeInTheDocument();
+  });
+
   it('should allow starting a new booking', async () => {
     const user = userEvent.setup();
     const { onNewBooking } = renderSuccess();

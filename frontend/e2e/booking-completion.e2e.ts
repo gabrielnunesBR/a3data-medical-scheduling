@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
@@ -281,6 +282,7 @@ test('creates an appointment and persists it in PostgreSQL', async ({ page, requ
   await expect(page.locator('.booking-receipt-print-footer')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Imprimir comprovante' })).toBeHidden();
   await expect(page.getByRole('button', { name: 'Copiar número' })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Baixar arquivo .ics' })).toBeHidden();
   await page.emulateMedia({ media: 'screen' });
 
   const confirmationText = await page.getByText(/^#\d+$/).innerText();
@@ -317,6 +319,34 @@ test('creates an appointment and persists it in PostgreSQL', async ({ page, requ
 
   expect(appointment.start_at).toEqual(new Date(startAt));
   expect(appointment.end_at).toEqual(endAt);
+
+  const googleCalendar = page.getByRole('link', { name: /Google Calendar/ });
+  const googleUrl = new URL((await googleCalendar.getAttribute('href')) ?? '');
+  const toUtcCalendarTime = (value: Date) =>
+    value
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}Z$/, 'Z');
+  const expectedDates = `${toUtcCalendarTime(new Date(startAt))}/${toUtcCalendarTime(endAt)}`;
+
+  expect(googleUrl.origin).toBe('https://calendar.google.com');
+  expect(googleUrl.searchParams.get('dates')).toBe(expectedDates);
+  expect(googleUrl.searchParams.get('stz')).toBe(CLINIC_TIME_ZONE);
+  expect(googleUrl.searchParams.get('etz')).toBe(CLINIC_TIME_ZONE);
+  expect(googleUrl.searchParams.get('text')).toBe('Exame agendado');
+  await expect(googleCalendar).toHaveAttribute('target', '_blank');
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Baixar arquivo .ics' }).click();
+  const download = await downloadPromise;
+  const icsContent = await readFile(await download.path(), 'utf8');
+
+  expect(download.suggestedFilename()).toBe(`agendamento-${appointmentId}.ics`);
+  expect(icsContent).toContain(`DTSTART:${toUtcCalendarTime(new Date(startAt))}`);
+  expect(icsContent).toContain(`DTEND:${toUtcCalendarTime(endAt)}`);
+  expect(icsContent).toContain('CLASS:PRIVATE');
+  expect(icsContent).not.toContain(patientName);
+  expect(icsContent).not.toContain(fixture.exam.name);
 
   const availabilityResponse = await request.get(
     `/api/doctors/${fixture.doctor.id}/availability` +
