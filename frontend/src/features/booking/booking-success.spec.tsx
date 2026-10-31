@@ -140,7 +140,9 @@ describe('Booking receipt', () => {
     expect(googleCalendar).toHaveAttribute('rel', 'noopener noreferrer');
     expect(url.searchParams.get('dates')).toBe('20261102T122000Z/20261102T130000Z');
     expect(screen.getByRole('button', { name: 'Baixar arquivo .ics' })).toBeInTheDocument();
-    expect(screen.getByText(/o evento não inclui nome do paciente/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/não inclui o nome do paciente nem o tipo de exame/i),
+    ).toBeInTheDocument();
   });
 
   it('should allow starting a new booking', async () => {
