@@ -307,3 +307,26 @@ Executar:
 Os testes utilizam o banco isolado
 medical_scheduling_test e removem os agendamentos
 criados durante sua execução.
+
+
+### Testes de concorrência
+
+O sistema utiliza uma exclusion constraint do
+PostgreSQL para impedir agendamentos com intervalos
+sobrepostos para o mesmo médico.
+
+O backend trata a violação SQLSTATE 23P01 como
+HTTP 409 Conflict.
+
+Os testes de concorrência verificam:
+- Requisições simultâneas para o mesmo horário.
+- Sobreposição entre exames de durações diferentes.
+- Agendamentos consecutivos sem sobreposição.
+- Rejeição direta pelo PostgreSQL.
+
+Executar:
+
+    npm run test:e2e --workspace=backend -- --run
+
+Os testes utilizam o banco PostgreSQL isolado
+medical_scheduling_test.
