@@ -95,7 +95,7 @@ Execute os comandos a seguir **na raiz do repositório**, salvo indicação cont
 ### 1. Instalar as dependências
 
 ```bash
-npm install
+npm ci
 ```
 
 ### 2. Configurar as variáveis de ambiente
@@ -408,8 +408,30 @@ Os testes com escrita usam o banco `medical_scheduling_test` e possuem verifica�
 
 ```bash
 npm run test --workspace=backend -- --run
-npm run test --workspace=frontend
+npm run test --workspace=frontend -- --run
 ```
+
+#### Cobertura de testes do backend
+
+O projeto utiliza Vitest com o provedor V8 para medir a cobertura das regras críticas de disponibilidade e agendamento.
+
+Execute na raiz do repositório:
+
+```bash
+npm run test --workspace=backend -- \
+  --run \
+  --coverage.enabled \
+  --coverage.provider=v8 \
+  --coverage.include='src/modules/availability/**/*.ts' \
+  --coverage.include='src/modules/appointments/**/*.ts' \
+  --coverage.exclude='**/*.spec.ts' \
+  --coverage.reporter=text \
+  --coverage.reporter=html
+```
+
+O relatório HTML é gerado em `backend/coverage/` e não é versionado.
+
+Esta medição considera os testes unitários do Vitest. Os testes E2E HTTP com PostgreSQL são executados separadamente e não são automaticamente somados aos percentuais de cobertura.
 
 ### 3. Testes E2E da API
 
@@ -457,14 +479,20 @@ A suíte de qualidade de interface verifica a ausência de transbordamento horiz
 
 Os agendamentos criados nos testes são identificados individualmente e removidos após cada cenário, quando a execução conclui normalmente.
 
+## Build, lint e formatação
+
+```bash
+npm run build
+npm run lint --workspace=frontend
+```
+
+O projeto compartilha uma configuração do Prettier para padronizar código no frontend e no backend.
+
 ## Integração contínua
 
-O projeto utiliza GitHub Actions para executar automaticamente
-as verificações de qualidade e os testes da aplicação.
+O projeto utiliza GitHub Actions para executar automaticamente as verificações de qualidade e os testes da aplicação.
 
-O workflow está definido em `.github/workflows/ci.yml`
-e é acionado em pushes para a branch `main`, pull requests
-direcionados à `main` e execuções manuais.
+O workflow está definido em `.github/workflows/ci.yml` e é acionado em pushes para a branch `main`, pull requests direcionados à `main` e execuções manuais.
 
 ### Quality and unit tests
 
@@ -485,21 +513,9 @@ direcionados à `main` e execuções manuais.
 - Testes E2E com Playwright.
 - Verificações de acessibilidade com axe-core.
 
-Em caso de falhas no Playwright, o workflow disponibiliza
-relatórios e arquivos de diagnóstico como artifacts.
+Em caso de falhas no Playwright, o workflow disponibiliza relatórios e arquivos de diagnóstico como artifacts.
 
-O banco utilizado pelo CI é temporário e isolado. Não são
-necessárias credenciais de produção ou serviços externos
-para executar as suítes automatizadas.
-
-### 5. Build, lint e formatação
-
-```bash
-npm run build
-npm run lint --workspace=frontend
-```
-
-O projeto compartilha uma configuração do Prettier para padronizar código no frontend e no backend.
+O banco utilizado pelo CI é temporário e isolado. Não são necessárias credenciais de produção ou serviços externos para executar as suítes automatizadas.
 
 ## Comandos úteis
 
