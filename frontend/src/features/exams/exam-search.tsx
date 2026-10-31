@@ -45,8 +45,7 @@ export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
         <Search
           size={20}
           aria-hidden="true"
-          className="pointer-events-none absolute top-1/2
-            left-4 -translate-y-1/2 text-muted-ink"
+          className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted-ink"
         />
 
         <input
@@ -57,10 +56,10 @@ export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
           placeholder="Ex.: ressonância magnética"
           autoComplete="off"
           aria-describedby="exam-search-help"
-          className="min-h-12 w-full rounded-xl border
-          border-line bg-white py-3 pr-4 pl-12
-            text-base text-ink placeholder:text-muted-ink
-            transition-colors"
+          className={[
+            'min-h-12 w-full rounded-xl border border-line bg-white py-3 pr-4 pl-12',
+            'text-base text-ink placeholder:text-muted-ink transition-colors',
+          ].join(' ')}
         />
       </div>
 
@@ -77,17 +76,12 @@ export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
               <div
                 key={item}
                 aria-hidden="true"
-                className="h-20 rounded-xl bg-slate-100
-                  motion-safe:animate-pulse"
+                className="h-20 rounded-xl bg-slate-100 motion-safe:animate-pulse"
               />
             ))}
           </div>
         ) : isError ? (
-          <div
-            role="alert"
-            className="rounded-xl border border-red-200
-              bg-red-50 p-5"
-          >
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5">
             <p className="font-medium text-danger">Não foi possível carregar os exames.</p>
 
             <p className="mt-2 text-sm text-muted-ink">Verifique sua conexão e tente novamente.</p>
@@ -95,9 +89,10 @@ export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
             <button
               type="button"
               onClick={() => void refetch()}
-              className="mt-4 min-h-11 rounded-lg bg-brand
-                px-4 font-semibold text-white
-                hover:bg-brand-strong"
+              className={[
+                'mt-4 min-h-11 rounded-lg bg-brand',
+                'px-4 font-semibold text-white hover:bg-brand-strong',
+              ].join(' ')}
             >
               Tentar novamente
             </button>
@@ -105,8 +100,7 @@ export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
         ) : exams.length === 0 ? (
           <div
             role="status"
-            className="rounded-xl border border-line
-              bg-canvas px-6 py-10 text-center"
+            className="rounded-xl border border-line bg-canvas px-6 py-10 text-center"
           >
             <p className="font-medium text-ink">Nenhum exame encontrado</p>
 
@@ -118,11 +112,7 @@ export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
               {exams.length} {exams.length === 1 ? 'exame encontrado' : 'exames encontrados'}
             </p>
 
-            <ul
-              aria-label="Exames encontrados"
-              className="max-h-96 space-y-3 overflow-y-auto
-                pr-1"
-            >
+            <ul aria-label="Exames encontrados" className="max-h-96 space-y-3 overflow-y-auto pr-1">
               {exams.map((exam) => {
                 const selected = selectedExamId === exam.id;
 
@@ -145,9 +135,10 @@ export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
                       ].join(' ')}
                     >
                       <span
-                        className="flex size-10 shrink-0
-                          items-center justify-center rounded-lg
-                          bg-canvas text-brand-strong"
+                        className={[
+                          'flex size-10 shrink-0',
+                          'items-center justify-center rounded-lg bg-canvas text-brand-strong',
+                        ].join(' ')}
                       >
                         <ScanLine size={20} aria-hidden="true" />
                       </span>
@@ -155,26 +146,26 @@ export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
                       <span className="min-w-0 flex-1">
                         <span className="block font-medium text-ink">{exam.name}</span>
 
-                        <span
-                          className="mt-1 block text-sm
-                            text-muted-ink"
-                        >
+                        <span className="mt-1 block text-sm text-muted-ink">
                           {exam.durationMinutes} minutos
                         </span>
                       </span>
 
                       {selected ? (
                         <span
-                          className="flex shrink-0 items-center
-                          gap-1 text-sm font-semibold text-brand-strong"
+                          className={[
+                            'flex shrink-0 items-center',
+                            'gap-1 text-sm font-semibold text-brand-strong',
+                          ].join(' ')}
                         >
                           <CheckCircle2 size={19} aria-hidden="true" />
                           <span className="hidden sm:inline">Selecionado</span>
                         </span>
                       ) : (
                         <span
-                          className="hidden shrink-0 text-sm
-                          font-medium text-brand-strong sm:inline"
+                          className={[
+                            'hidden shrink-0 text-sm font-medium text-brand-strong sm:inline',
+                          ].join(' ')}
                         >
                           Selecionar
                         </span>

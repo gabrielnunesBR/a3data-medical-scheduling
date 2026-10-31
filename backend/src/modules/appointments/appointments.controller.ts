@@ -38,7 +38,6 @@ export class AppointmentsController {
     required: false,
     description: 'UUID opcional. Reutilize a mesma chave apenas para repetir a mesma operação.',
     schema: { type: 'string', format: 'uuid' },
-    example: '550e8400-e29b-41d4-a716-446655440000',
   })
   @ApiCreatedResponse({
     description: 'Reserva criada ou recuperada pela mesma chave de idempotência.',

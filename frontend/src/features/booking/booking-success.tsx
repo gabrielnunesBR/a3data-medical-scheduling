@@ -31,9 +31,10 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
   return (
     <div className="py-5 text-center sm:py-8">
       <div
-        className="mx-auto flex size-16 items-center
-          justify-center rounded-full bg-green-50
-          text-success"
+        className={[
+          'mx-auto flex size-16 items-center',
+          'justify-center rounded-full bg-green-50 text-success',
+        ].join(' ')}
       >
         <CheckCircle2 size={36} aria-hidden="true" />
       </div>
@@ -41,21 +42,18 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
       <h2
         id="booking-step-heading"
         tabIndex={-1}
-        className="mt-5 text-2xl font-bold text-ink
-          focus-visible:rounded-sm
-          focus-visible:outline-2
-          focus-visible:outline-offset-4
-          focus-visible:outline-brand"
+        className={[
+          'mt-5 text-2xl font-bold text-ink',
+          'focus-visible:rounded-sm focus-visible:outline-2',
+          'focus-visible:outline-offset-4 focus-visible:outline-brand',
+        ].join(' ')}
       >
         Agendamento confirmado!
       </h2>
 
       <p className="mt-3 text-base text-muted-ink">Seu exame foi agendado com sucesso.</p>
 
-      <div
-        className="mt-7 rounded-xl border border-line
-          bg-canvas p-5 text-left sm:p-6"
-      >
+      <div className="mt-7 rounded-xl border border-line bg-canvas p-5 text-left sm:p-6">
         <div className="flex items-center gap-2">
           <CalendarCheck2 size={20} className="text-brand-strong" aria-hidden="true" />
 
@@ -102,9 +100,10 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
       <button
         type="button"
         onClick={onNewBooking}
-        className="mt-7 min-h-12 rounded-xl
-          bg-brand px-7 font-semibold text-white
-          hover:bg-brand-strong"
+        className={[
+          'mt-7 min-h-12 rounded-xl',
+          'bg-brand px-7 font-semibold text-white hover:bg-brand-strong',
+        ].join(' ')}
       >
         Agendar outro exame
       </button>

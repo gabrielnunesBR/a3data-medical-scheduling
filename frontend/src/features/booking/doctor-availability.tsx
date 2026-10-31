@@ -96,11 +96,11 @@ export function DoctorAvailability({
 
             onDoctorChange(selected ?? null);
           }}
-          className="mt-2 min-h-12 w-full rounded-xl border
-          border-line bg-white px-4 text-base text-ink
-            transition-colors
-            disabled:cursor-not-allowed
-          disabled:bg-slate-50"
+          className={[
+            'mt-2 min-h-12 w-full rounded-xl border',
+            'border-line bg-white px-4 text-base text-ink',
+            'transition-colors disabled:cursor-not-allowed disabled:bg-slate-50',
+          ].join(' ')}
         >
           <option value="">
             {doctorsPending ? 'Carregando profissionais...' : 'Selecione um profissional'}
@@ -120,8 +120,7 @@ export function DoctorAvailability({
             <button
               type="button"
               onClick={() => void refetchDoctors()}
-              className="mt-2 font-semibold text-brand-strong
-                underline underline-offset-4"
+              className="mt-2 font-semibold text-brand-strong underline underline-offset-4"
             >
               Tentar novamente
             </button>
@@ -130,11 +129,7 @@ export function DoctorAvailability({
       </div>
 
       {!doctor ? (
-        <div
-          className="rounded-xl border border-line
-          bg-canvas p-6 text-center text-sm
-          text-muted-ink"
-        >
+        <div className="rounded-xl border border-line bg-canvas p-6 text-center text-sm text-muted-ink">
           Selecione um profissional para escolher a data do atendimento.
         </div>
       ) : (
@@ -148,10 +143,7 @@ export function DoctorAvailability({
               </h3>
             </div>
 
-            <div
-              className="overflow-x-auto rounded-xl border
-            border-line bg-white p-3 sm:p-5"
-            >
+            <div className="overflow-x-auto rounded-xl border border-line bg-white p-3 sm:p-5">
               <div className="mx-auto w-max">
                 <DayPicker
                   mode="single"
@@ -188,10 +180,7 @@ export function DoctorAvailability({
             </div>
 
             {!date ? (
-              <p
-                className="rounded-xl bg-canvas p-5
-                text-sm text-muted-ink"
-              >
+              <p className="rounded-xl bg-canvas p-5 text-sm text-muted-ink">
                 Escolha uma data para consultar os horários.
               </p>
             ) : loadingSlots ? (
@@ -203,18 +192,13 @@ export function DoctorAvailability({
                     <div
                       key={index}
                       aria-hidden="true"
-                      className="h-12 rounded-lg bg-slate-100
-                        motion-safe:animate-pulse"
+                      className="h-12 rounded-lg bg-slate-100 motion-safe:animate-pulse"
                     />
                   ))}
                 </div>
               </div>
             ) : slotsError ? (
-              <div
-                role="alert"
-                className="rounded-xl border
-                border-red-200 bg-red-50 p-5"
-              >
+              <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-5">
                 <p className="text-sm font-medium text-danger">
                   Não foi possível consultar os horários.
                 </p>
@@ -222,18 +206,13 @@ export function DoctorAvailability({
                 <button
                   type="button"
                   onClick={() => void refetchSlots()}
-                  className="mt-3 font-semibold text-brand-strong
-                    underline underline-offset-4"
+                  className="mt-3 font-semibold text-brand-strong underline underline-offset-4"
                 >
                   Tentar novamente
                 </button>
               </div>
             ) : availableSlots.length === 0 ? (
-              <div
-                role="status"
-                className="rounded-xl border
-                border-line bg-canvas p-5"
-              >
+              <div role="status" className="rounded-xl border border-line bg-canvas p-5">
                 <p className="font-medium text-ink">Nenhum horário disponível nesta data.</p>
 
                 <p className="mt-2 text-sm text-muted-ink">Escolha outra data ou profissional.</p>
