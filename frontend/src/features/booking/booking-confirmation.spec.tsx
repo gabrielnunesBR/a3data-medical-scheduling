@@ -444,4 +444,40 @@ describe('Booking confirmation', () => {
 
     expect(requests).toBe(1);
   });
+
+  it('should show a friendly message for HTTP 429', async () => {
+    server.use(
+      http.post('*/api/appointments', () =>
+        HttpResponse.json(
+          { message: 'Too Many Requests' },
+          { status: 429 },
+        ),
+      ),
+    );
+
+    const user = await goToConfirmation();
+
+    await user.type(
+      screen.getByRole('textbox', {
+        name: 'Nome completo do paciente',
+      }),
+      'Maria Oliveira',
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Confirmar agendamento',
+      }),
+    );
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent(
+      'Muitas tentativas de agendamento em pouco tempo.',
+    );
+
+    expect(
+      screen.queryByText('Too Many Requests'),
+    ).not.toBeInTheDocument();
+  });
 });

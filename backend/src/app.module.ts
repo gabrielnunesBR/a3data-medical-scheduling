@@ -2,6 +2,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ThrottlerModule, minutes } from '@nestjs/throttler';
 
 import { envSchema } from './config/env.schema.js';
 import { ExamsModule } from './modules/exams/exams.module.js';
@@ -40,6 +41,13 @@ import { AppointmentsModule } from './modules/appointments/appointments.module.j
         retryDelay: 1000,
       }),
     }),
+
+    ThrottlerModule.forRoot([
+      {
+        ttl: minutes(1),
+        limit: 20,
+      },
+    ]),
 
     ExamsModule,
     DoctorsModule,

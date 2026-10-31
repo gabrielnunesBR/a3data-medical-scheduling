@@ -48,6 +48,9 @@ function getErrorMessage(error: Error): string {
       case 422:
         return 'Esse horário não pode mais ser agendado. Volte e escolha outro.';
 
+      case 429:
+        return 'Muitas tentativas de agendamento em pouco tempo. Aguarde alguns instantes antes de tentar novamente.';
+
       default:
         return 'Não foi possível verificar se o agendamento foi concluído. Evite repetir o envio imediatamente.';
     }

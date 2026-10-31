@@ -1,4 +1,10 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 import {
   createAppointmentSchema,
@@ -13,6 +19,7 @@ export class AppointmentsController {
   ) {}
 
   @Post()
+  @UseGuards(ThrottlerGuard)
   create(
     @Body({ schema: createAppointmentSchema })
     dto: CreateAppointmentDto,
