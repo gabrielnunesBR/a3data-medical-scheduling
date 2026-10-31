@@ -51,3 +51,70 @@ jobs:
 
       - name: Build backend and frontend
         run: npm run build
+  
+  integration:
+    name: PostgreSQL integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: medical_app
+          POSTGRES_PASSWORD: ci-local-only
+          POSTGRES_DB: medical_scheduling_test
+
+        ports:
+          - 5434:5432
+
+        options: >-
+          --health-cmd "pg_isready -U medical_app -d medical_scheduling_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure test environment
+        run: |
+          cat > .env.test <<'EOF'
+          POSTGRES_HOST=127.0.0.1
+          POSTGRES_PORT=5434
+          POSTGRES_DB=medical_scheduling_test
+          POSTGRES_USER=medical_app
+          POSTGRES_PASSWORD=ci-local-only
+          EOF
+
+          chmod 600 .env.test
+
+      - name: Apply database migrations
+        run: npm run migration:run --workspace=backend
+        env:
+          NODE_ENV: test
+
+      - name: Seed exams
+        run: npm run seed:exams --workspace=backend
+        env:
+          NODE_ENV: test
+
+      - name: Seed doctors
+        run: npm run seed:doctors --workspace=backend
+        env:
+          NODE_ENV: test
+
+      - name: Run backend E2E tests
+        run: npm run test:e2e --workspace=backend -- --run
+        env:
+          NODE_ENV: test
