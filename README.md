@@ -161,3 +161,70 @@ em TypeScript.
 
 O seed é transacional e idempotente, não duplicando
 nem sobrescrevendo registros existentes.
+
+
+### Consultar disponibilidade médica
+
+GET /api/doctors/:id/availability
+
+Parâmetros:
+- id: identificador do médico (URL)
+- examId: identificador do exame (query)
+- date: data YYYY-MM-DD (query)
+
+Exemplo:
+
+    curl "http://localhost:3000/api/doctors/1/availability?examId=17&date=2030-01-07"
+
+Retorna uma lista de horários disponíveis no formato HH:mm.
+
+Os horários são calculados utilizando a duração
+do exame, os turnos semanais do médico e os
+agendamentos já existentes.
+
+O fuso adotado é America/Sao_Paulo.
+```
+
+O ID `1` é apenas ilustrativo; o identificador real deve ser consultado em `/api/doctors`.
+
+## 10. Commit
+
+Depois de confirmar o funcionamento:
+
+```bash
+git add backend/src/modules/availability \
+  backend/test/availability.e2e-spec.ts \
+  README.md
+
+git commit -m "feat: expose medical availability API with validation and e2e tests"
+
+git push
+```
+
+## Checklist de conclusão
+
+{@body const checks=["Schema Zod dos parâmetros criado","AvailabilityController implementado","Controller registrado no AvailabilityModule","GET /api/doctors/:id/availability funcionando","IDs e datas inválidas tratados","Horários retornados conforme duração e turnos","Testes E2E passando com PostgreSQL","Build e testes unitários passando","README atualizado","Commit e push realizados"]}
+{@body const [done,setDone]=DIL.useState([])}
+<box border radius="lg" padding={3} gap={2}>
+  <row align="center" justify="between">
+    **Sprint 2 — Task 5**
+    <text color="secondary" size="xs" tabularNums>{done.length}/{checks.length}</text>
+  </row>
+  {#each checks as item}
+    <checkbox key={item} checked={done.includes(item)} onChange={v=>setDone(p=>v?[...p,item]:p.filter(x=>x!==item))} lineThrough={false}>{item}</checkbox>
+  {/each}
+</box>
+
+---
+
+## Próxima etapa — Sprint 3: Agendamento de exames
+
+Quando esta task estiver validada, teremos duas das três funcionalidades principais da API concluídas: busca de exames e consulta de disponibilidade.
+
+A próxima sprint será dedicada à **criação de agendamentos**.
+
+Começaremos isolando os testes de integração em um banco próprio. Depois implementaremos a confirmação de agendamentos, a validação completa das regras de negócio e o tratamento dos conflitos de concorrência.
+
+A prioridade será garantir que dois pacientes não consigam reservar intervalos sobrepostos para o mesmo médico, mesmo com requisições simultâneas.
+
+Por enquanto, implemente apenas a Task 5. Quando você confirmar que os testes e as requisições HTTP passaram, avançaremos.

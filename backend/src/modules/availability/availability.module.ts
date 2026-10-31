@@ -6,6 +6,7 @@ import { DoctorShift } from '../doctors/entities/doctor-shift.entity.js';
 import { Doctor } from '../doctors/entities/doctor.entity.js';
 import { Exam } from '../exams/entities/exam.entity.js';
 
+import { AvailabilityController } from './availability.controller.js';
 import { AvailabilityService } from './availability.service.js';
 
 @Module({
@@ -17,6 +18,7 @@ import { AvailabilityService } from './availability.service.js';
       Appointment,
     ]),
   ],
+  controllers: [AvailabilityController],
   providers: [AvailabilityService],
 })
 export class AvailabilityModule {}
