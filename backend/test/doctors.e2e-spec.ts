@@ -32,9 +32,7 @@ describe('Doctors API (e2e)', () => {
   });
 
   it('should return the five registered doctors', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/doctors')
-      .expect(200);
+    const response = await request(app.getHttpServer()).get('/api/doctors').expect(200);
 
     const doctors = response.body as DoctorResponse[];
 
@@ -55,18 +53,12 @@ describe('Doctors API (e2e)', () => {
   });
 
   it('should return only the expected doctor fields', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/doctors')
-      .expect(200);
+    const response = await request(app.getHttpServer()).get('/api/doctors').expect(200);
 
     const doctors = response.body as DoctorResponse[];
 
     for (const doctor of doctors) {
-      expect(Object.keys(doctor).sort()).toEqual([
-        'crm',
-        'id',
-        'name',
-      ]);
+      expect(Object.keys(doctor).sort()).toEqual(['crm', 'id', 'name']);
 
       expect(doctor.id).toEqual(expect.any(Number));
       expect(doctor.name).toEqual(expect.any(String));

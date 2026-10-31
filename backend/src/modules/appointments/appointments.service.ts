@@ -7,13 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DateTime } from 'luxon';
-import {
-  LessThan,
-  MoreThan,
-  QueryFailedError,
-  type EntityManager,
-  Repository,
-} from 'typeorm';
+import { LessThan, MoreThan, QueryFailedError, type EntityManager, Repository } from 'typeorm';
 
 import { CLINIC_TIME_ZONE } from '../availability/availability.constants.js';
 import { AvailabilityService } from '../availability/availability.service.js';
@@ -24,18 +18,10 @@ import { Appointment } from './entities/appointment.entity.js';
 
 export type AppointmentResult = Pick<
   Appointment,
-  | 'id'
-  | 'patientName'
-  | 'examId'
-  | 'doctorId'
-  | 'startAt'
-  | 'endAt'
-  | 'createdAt'
+  'id' | 'patientName' | 'examId' | 'doctorId' | 'startAt' | 'endAt' | 'createdAt'
 >;
 
-function toAppointmentResult(
-  appointment: Appointment,
-): AppointmentResult {
+function toAppointmentResult(appointment: Appointment): AppointmentResult {
   return {
     id: appointment.id,
     patientName: appointment.patientName,
@@ -47,16 +33,12 @@ function toAppointmentResult(
   };
 }
 
-function matchesRequest(
-  appointment: Appointment,
-  dto: CreateAppointmentDto,
-): boolean {
+function matchesRequest(appointment: Appointment, dto: CreateAppointmentDto): boolean {
   return (
     appointment.patientName === dto.patientName.trim() &&
     appointment.examId === dto.examId &&
     appointment.doctorId === dto.doctorId &&
-    appointment.startAt.getTime() ===
-      new Date(dto.startAt).getTime()
+    appointment.startAt.getTime() === new Date(dto.startAt).getTime()
   );
 }
 
@@ -72,48 +54,38 @@ export class AppointmentsService {
     private readonly availabilityService: AvailabilityService,
   ) {}
 
-  async create(
-    dto: CreateAppointmentDto,
-    idempotencyKey?: string,
-  ): Promise<AppointmentResult> {
+  async create(dto: CreateAppointmentDto, idempotencyKey?: string): Promise<AppointmentResult> {
     if (!idempotencyKey) {
       return this.createNew(dto, null);
     }
 
-    return this.appointmentsRepository.manager.transaction(
-      async (manager) => {
-        await manager.query(
-          `SELECT pg_advisory_xact_lock(
+    return this.appointmentsRepository.manager.transaction(async (manager) => {
+      await manager.query(
+        `SELECT pg_advisory_xact_lock(
             hashtextextended($1::text, 0)
           )`,
-          [idempotencyKey],
-        );
+        [idempotencyKey],
+      );
 
-        const repository = manager.getRepository(Appointment);
+      const repository = manager.getRepository(Appointment);
 
-        const existing = await repository.findOneBy({
-          idempotencyKey,
-        });
+      const existing = await repository.findOneBy({
+        idempotencyKey,
+      });
 
-        if (existing) {
-          if (!matchesRequest(existing, dto)) {
-            throw new ConflictException({
-              code: 'IDEMPOTENCY_KEY_REUSED',
-              message:
-                'Idempotency key was already used with different data.',
-            });
-          }
-
-          return toAppointmentResult(existing);
+      if (existing) {
+        if (!matchesRequest(existing, dto)) {
+          throw new ConflictException({
+            code: 'IDEMPOTENCY_KEY_REUSED',
+            message: 'Idempotency key was already used with different data.',
+          });
         }
 
-        return this.createNew(
-          dto,
-          idempotencyKey,
-          manager,
-        );
-      },
-    );
+        return toAppointmentResult(existing);
+      }
+
+      return this.createNew(dto, idempotencyKey, manager);
+    });
   }
 
   private async createNew(
@@ -131,27 +103,18 @@ export class AppointmentsService {
 
     const localStart = start.setZone(CLINIC_TIME_ZONE);
 
-    if (
-      localStart.second !== 0 ||
-      localStart.millisecond !== 0
-    ) {
-      throw new UnprocessableEntityException(
-        'Appointment time must have minute precision.',
-      );
+    if (localStart.second !== 0 || localStart.millisecond !== 0) {
+      throw new UnprocessableEntityException('Appointment time must have minute precision.');
     }
 
     if (start.toMillis() < Date.now()) {
-      throw new UnprocessableEntityException(
-        'Cannot schedule an appointment in the past.',
-      );
+      throw new UnprocessableEntityException('Cannot schedule an appointment in the past.');
     }
 
-    const examsRepository =
-      manager?.getRepository(Exam) ?? this.examsRepository;
+    const examsRepository = manager?.getRepository(Exam) ?? this.examsRepository;
 
     const appointmentsRepository =
-      manager?.getRepository(Appointment) ??
-      this.appointmentsRepository;
+      manager?.getRepository(Appointment) ?? this.appointmentsRepository;
 
     const exam = await examsRepository.findOneBy({
       id: dto.examId,
@@ -177,17 +140,8 @@ export class AppointmentsService {
     const endAt = end.toJSDate();
 
     const availableSlots = manager
-      ? await this.availabilityService.findAvailableSlots(
-          dto.doctorId,
-          dto.examId,
-          date,
-          manager,
-        )
-      : await this.availabilityService.findAvailableSlots(
-          dto.doctorId,
-          dto.examId,
-          date,
-        );
+      ? await this.availabilityService.findAvailableSlots(dto.doctorId, dto.examId, date, manager)
+      : await this.availabilityService.findAvailableSlots(dto.doctorId, dto.examId, date);
 
     if (!availableSlots.includes(startTime)) {
       const hasConflict = await appointmentsRepository.existsBy({
@@ -197,9 +151,7 @@ export class AppointmentsService {
       });
 
       if (hasConflict) {
-        throw new ConflictException(
-          'The selected time slot is no longer available.',
-        );
+        throw new ConflictException('The selected time slot is no longer available.');
       }
 
       throw new UnprocessableEntityException(
@@ -226,19 +178,14 @@ export class AppointmentsService {
         };
 
         if (driverError.code === '23P01') {
-          throw new ConflictException(
-            'The selected time slot is no longer available.',
-          );
+          throw new ConflictException('The selected time slot is no longer available.');
         }
 
         if (
           driverError.code === '23505' &&
-          driverError.constraint ===
-            'uq_appointments_idempotency_key'
+          driverError.constraint === 'uq_appointments_idempotency_key'
         ) {
-          throw new ConflictException(
-            'Idempotency key is already in use.',
-          );
+          throw new ConflictException('Idempotency key is already in use.');
         }
       }
 

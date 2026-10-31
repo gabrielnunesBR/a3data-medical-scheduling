@@ -1,10 +1,7 @@
 import { DateTime } from 'luxon';
 
 import { CLINIC_TIME_ZONE } from './availability.constants.js';
-import {
-  filterOccupiedSlots,
-  type OccupiedInterval,
-} from './filter-occupied-slots.js';
+import { filterOccupiedSlots, type OccupiedInterval } from './filter-occupied-slots.js';
 import { generateShiftSlots } from './generate-shift-slots.js';
 
 export type WeeklyShift = {
@@ -48,32 +45,19 @@ export function getAvailableSlots({
     throw new RangeError('Invalid current date.');
   }
 
-  const dayShifts = shifts.filter(
-    (shift) => shift.weekday === selectedDate.weekday,
-  );
+  const dayShifts = shifts.filter((shift) => shift.weekday === selectedDate.weekday);
 
   const candidateSlots = dayShifts.flatMap((shift) =>
-    generateShiftSlots(
-      shift.startTime,
-      shift.endTime,
-      durationMinutes,
-    ),
+    generateShiftSlots(shift.startTime, shift.endTime, durationMinutes),
   );
 
   const uniqueSlots = [...new Set(candidateSlots)];
 
-  const unoccupiedSlots = filterOccupiedSlots(
-    uniqueSlots,
-    durationMinutes,
-    occupiedIntervals,
-  );
+  const unoccupiedSlots = filterOccupiedSlots(uniqueSlots, durationMinutes, occupiedIntervals);
 
   return unoccupiedSlots
     .filter((slot) => {
-      const slotDateTime = DateTime.fromISO(
-        `${date}T${slot}`,
-        { zone: CLINIC_TIME_ZONE },
-      );
+      const slotDateTime = DateTime.fromISO(`${date}T${slot}`, { zone: CLINIC_TIME_ZONE });
 
       return (
         slotDateTime.isValid &&

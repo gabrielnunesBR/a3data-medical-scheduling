@@ -1,16 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  getAvailableSlots,
-  type WeeklyShift,
-} from './get-available-slots.js';
+import { getAvailableSlots, type WeeklyShift } from './get-available-slots.js';
 
 describe('getAvailableSlots', () => {
   const monday = '2026-11-02';
 
-  const beforeMonday = new Date(
-    '2026-11-01T12:00:00-03:00',
-  );
+  const beforeMonday = new Date('2026-11-01T12:00:00-03:00');
 
   const shifts: WeeklyShift[] = [
     {
@@ -67,9 +62,7 @@ describe('getAvailableSlots', () => {
       date: monday,
       durationMinutes: 40,
       shifts,
-      occupiedIntervals: [
-        { startTime: '09:20', endTime: '10:00' },
-      ],
+      occupiedIntervals: [{ startTime: '09:20', endTime: '10:00' }],
       now: beforeMonday,
     });
 
@@ -82,9 +75,7 @@ describe('getAvailableSlots', () => {
       date: monday,
       durationMinutes: 40,
       shifts,
-      occupiedIntervals: [
-        { startTime: '09:10', endTime: '09:50' },
-      ],
+      occupiedIntervals: [{ startTime: '09:10', endTime: '09:50' }],
       now: beforeMonday,
     });
 
@@ -171,20 +162,17 @@ describe('getAvailableSlots', () => {
     expect(result).toHaveLength(6);
   });
 
-  it.each(['2026-02-30', '2026-11-2', 'invalid'])(
-    'should reject invalid date %s',
-    (date) => {
-      expect(() =>
-        getAvailableSlots({
-          date,
-          durationMinutes: 40,
-          shifts,
-          occupiedIntervals: [],
-          now: beforeMonday,
-        }),
-      ).toThrow(RangeError);
-    },
-  );
+  it.each(['2026-02-30', '2026-11-2', 'invalid'])('should reject invalid date %s', (date) => {
+    expect(() =>
+      getAvailableSlots({
+        date,
+        durationMinutes: 40,
+        shifts,
+        occupiedIntervals: [],
+        now: beforeMonday,
+      }),
+    ).toThrow(RangeError);
+  });
 
   it('should reject invalid durations', () => {
     expect(() =>

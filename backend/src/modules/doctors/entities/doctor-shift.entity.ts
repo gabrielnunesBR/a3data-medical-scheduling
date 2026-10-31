@@ -1,20 +1,8 @@
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-  Unique,
-} from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn, Unique } from 'typeorm';
 
 import { Doctor } from './doctor.entity.js';
 
-@Unique('uq_doctor_shifts_slot', [
-  'doctorId',
-  'weekday',
-  'startTime',
-  'endTime',
-])
+@Unique('uq_doctor_shifts_slot', ['doctorId', 'weekday', 'startTime', 'endTime'])
 @Entity('doctor_shifts')
 export class DoctorShift {
   @PrimaryGeneratedColumn('identity')

@@ -25,17 +25,14 @@ describe('createAppointmentSchema', () => {
     expect(result.patientName).toBe('João Silva');
   });
 
-  it.each(['', '   '])(
-    'should reject an empty patient name',
-    (patientName) => {
-      const result = createAppointmentSchema.safeParse({
-        ...validAppointment,
-        patientName,
-      });
+  it.each(['', '   '])('should reject an empty patient name', (patientName) => {
+    const result = createAppointmentSchema.safeParse({
+      ...validAppointment,
+      patientName,
+    });
 
-      expect(result.success).toBe(false);
-    },
-  );
+    expect(result.success).toBe(false);
+  });
 
   it('should reject patient names longer than 160 characters', () => {
     const result = createAppointmentSchema.safeParse({
@@ -46,29 +43,23 @@ describe('createAppointmentSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it.each([0, -1, 1.5, '17', 2147483648])(
-    'should reject invalid exam IDs: %s',
-    (examId) => {
-      const result = createAppointmentSchema.safeParse({
-        ...validAppointment,
-        examId,
-      });
+  it.each([0, -1, 1.5, '17', 2147483648])('should reject invalid exam IDs: %s', (examId) => {
+    const result = createAppointmentSchema.safeParse({
+      ...validAppointment,
+      examId,
+    });
 
-      expect(result.success).toBe(false);
-    },
-  );
+    expect(result.success).toBe(false);
+  });
 
-  it.each([0, -1, 2.5, '1', 2147483648])(
-    'should reject invalid doctor IDs: %s',
-    (doctorId) => {
-      const result = createAppointmentSchema.safeParse({
-        ...validAppointment,
-        doctorId,
-      });
+  it.each([0, -1, 2.5, '1', 2147483648])('should reject invalid doctor IDs: %s', (doctorId) => {
+    const result = createAppointmentSchema.safeParse({
+      ...validAppointment,
+      doctorId,
+    });
 
-      expect(result.success).toBe(false);
-    },
-  );
+    expect(result.success).toBe(false);
+  });
 
   it('should accept a UTC timestamp', () => {
     const result = createAppointmentSchema.safeParse({

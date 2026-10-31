@@ -1,11 +1,4 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Headers,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { BadRequestException, Body, Controller, Headers, Post, UseGuards } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { z } from 'zod';
 
@@ -19,9 +12,7 @@ const idempotencyKeySchema = z.uuid();
 
 @Controller('appointments')
 export class AppointmentsController {
-  constructor(
-    private readonly appointmentsService: AppointmentsService,
-  ) {}
+  constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Post()
   @UseGuards(ThrottlerGuard)
@@ -33,20 +24,13 @@ export class AppointmentsController {
     idempotencyKey?: string,
   ) {
     if (idempotencyKey !== undefined) {
-      const result = idempotencyKeySchema.safeParse(
-        idempotencyKey,
-      );
+      const result = idempotencyKeySchema.safeParse(idempotencyKey);
 
       if (!result.success) {
-        throw new BadRequestException(
-          'Invalid Idempotency-Key header.',
-        );
+        throw new BadRequestException('Invalid Idempotency-Key header.');
       }
     }
 
-    return this.appointmentsService.create(
-      dto,
-      idempotencyKey,
-    );
+    return this.appointmentsService.create(dto, idempotencyKey);
   }
 }

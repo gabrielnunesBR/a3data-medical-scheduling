@@ -1,16 +1,6 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
-import {
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
 import { Appointment } from '../appointments/entities/appointment.entity.js';
@@ -75,9 +65,9 @@ describe('AvailabilityService', () => {
   });
 
   it('should reject invalid dates', async () => {
-    await expect(
-      service.findAvailableSlots(1, 1, '2030-02-30'),
-    ).rejects.toThrow(BadRequestException);
+    await expect(service.findAvailableSlots(1, 1, '2030-02-30')).rejects.toThrow(
+      BadRequestException,
+    );
 
     expect(doctorsRepository.findOneBy).not.toHaveBeenCalled();
   });
@@ -85,9 +75,9 @@ describe('AvailabilityService', () => {
   it('should reject a nonexistent doctor', async () => {
     doctorsRepository.findOneBy.mockResolvedValue(null);
 
-    await expect(
-      service.findAvailableSlots(999, 1, '2030-01-07'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.findAvailableSlots(999, 1, '2030-01-07')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('should reject a nonexistent exam', async () => {
@@ -97,9 +87,9 @@ describe('AvailabilityService', () => {
 
     examsRepository.findOneBy.mockResolvedValue(null);
 
-    await expect(
-      service.findAvailableSlots(1, 999, '2030-01-07'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.findAvailableSlots(1, 999, '2030-01-07')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('should return no slots when the doctor has no shifts', async () => {
@@ -114,11 +104,7 @@ describe('AvailabilityService', () => {
 
     shiftsRepository.find.mockResolvedValue([]);
 
-    const result = await service.findAvailableSlots(
-      1,
-      1,
-      '2030-01-07',
-    );
+    const result = await service.findAvailableSlots(1, 1, '2030-01-07');
 
     expect(result).toEqual([]);
 
@@ -150,19 +136,9 @@ describe('AvailabilityService', () => {
       },
     ]);
 
-    const result = await service.findAvailableSlots(
-      1,
-      17,
-      '2030-01-07',
-    );
+    const result = await service.findAvailableSlots(1, 17, '2030-01-07');
 
-    expect(result).toEqual([
-      '08:00',
-      '08:40',
-      '10:00',
-      '10:40',
-      '11:20',
-    ]);
+    expect(result).toEqual(['08:00', '08:40', '10:00', '10:40', '11:20']);
 
     expect(shiftsRepository.find).toHaveBeenCalledWith({
       where: {

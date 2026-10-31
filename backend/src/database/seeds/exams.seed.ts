@@ -5,17 +5,16 @@ import { z } from 'zod';
 import { Exam } from '../../modules/exams/entities/exam.entity.js';
 import { migrationDataSource } from '../data-source.js';
 
-const examCsvSchema = z.object({
-  id: z.coerce.number().int().positive(),
-  nome: z.string().trim().min(1).max(180),
-  duracao_minutos: z.coerce.number().int().positive(),
-}).strict();
+const examCsvSchema = z
+  .object({
+    id: z.coerce.number().int().positive(),
+    nome: z.string().trim().min(1).max(180),
+    duracao_minutos: z.coerce.number().int().positive(),
+  })
+  .strict();
 
 async function main(): Promise<void> {
-  const csvPath = new URL(
-    '../../../../challenge/dados/exames.csv',
-    import.meta.url,
-  );
+  const csvPath = new URL('../../../../challenge/dados/exames.csv', import.meta.url);
 
   const content = await readFile(csvPath, 'utf8');
 
@@ -34,9 +33,7 @@ async function main(): Promise<void> {
     const result = examCsvSchema.safeParse(record);
 
     if (!result.success) {
-      throw new Error(
-        `CSV inválido na linha ${index + 2}: ${result.error.message}`,
-      );
+      throw new Error(`CSV inválido na linha ${index + 2}: ${result.error.message}`);
     }
 
     return {

@@ -1,21 +1,12 @@
-import {
-  Controller,
-  Get,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Query } from '@nestjs/common';
 
-import {
-  listExamsQuerySchema,
-  type ListExamsQuery,
-} from './dto/list-exams-query.dto.js';
+import { listExamsQuerySchema, type ListExamsQuery } from './dto/list-exams-query.dto.js';
 
 import { ExamsService } from './exams.service.js';
 
 @Controller('exams')
 export class ExamsController {
-  constructor(
-    private readonly examsService: ExamsService,
-  ) {}
+  constructor(private readonly examsService: ExamsService) {}
 
   @Get()
   findAll(

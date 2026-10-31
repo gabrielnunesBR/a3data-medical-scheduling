@@ -18,11 +18,7 @@ export function generateShiftSlots(
 
   const slots: string[] = [];
 
-  for (
-    let current = start;
-    current + durationMinutes <= end;
-    current += durationMinutes
-  ) {
+  for (let current = start; current + durationMinutes <= end; current += durationMinutes) {
     slots.push(minutesToTime(current));
   }
 

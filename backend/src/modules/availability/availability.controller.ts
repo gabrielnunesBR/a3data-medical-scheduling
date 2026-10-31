@@ -9,9 +9,7 @@ import {
 
 @Controller('doctors')
 export class AvailabilityController {
-  constructor(
-    private readonly availabilityService: AvailabilityService,
-  ) {}
+  constructor(private readonly availabilityService: AvailabilityService) {}
 
   @Get(':id/availability')
   findAvailableSlots(
@@ -19,10 +17,6 @@ export class AvailabilityController {
     @Query({ schema: getAvailabilityQuerySchema })
     query: GetAvailabilityQuery,
   ): Promise<string[]> {
-    return this.availabilityService.findAvailableSlots(
-      doctorId,
-      query.examId,
-      query.date,
-    );
+    return this.availabilityService.findAvailableSlots(doctorId, query.examId, query.date);
   }
 }

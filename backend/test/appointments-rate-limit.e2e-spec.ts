@@ -2,13 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import request from 'supertest';
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/config/configure-app.js';
@@ -43,10 +37,7 @@ describe('Appointment rate limiting (e2e)', () => {
 
   it('should return HTTP 429 after 20 POST requests', async () => {
     for (let index = 0; index < 20; index++) {
-      await request(app.getHttpServer())
-        .post('/api/appointments')
-        .send({})
-        .expect(400);
+      await request(app.getHttpServer()).post('/api/appointments').send({}).expect(400);
     }
 
     const response = await request(app.getHttpServer())
@@ -56,8 +47,6 @@ describe('Appointment rate limiting (e2e)', () => {
 
     expect(response.body.statusCode).toBe(429);
 
-    await request(app.getHttpServer())
-      .get('/api/doctors')
-      .expect(200);
+    await request(app.getHttpServer()).get('/api/doctors').expect(200);
   });
 });

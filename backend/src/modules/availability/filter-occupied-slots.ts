@@ -29,9 +29,7 @@ export function filterOccupiedSlots(
     const start = timeToMinutes(slot);
     const end = start + durationMinutes;
 
-    const hasConflict = occupied.some(
-      (interval) => start < interval.end && end > interval.start,
-    );
+    const hasConflict = occupied.some((interval) => start < interval.end && end > interval.start);
 
     return !hasConflict;
   });

@@ -5,14 +5,7 @@ import { Test } from '@nestjs/testing';
 import { DateTime } from 'luxon';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/config/configure-app.js';
@@ -121,10 +114,7 @@ describe('Appointments API (e2e)', () => {
       examId: 17,
       doctorId,
       startAt: new Date(body.startAt).toISOString(),
-      endAt: DateTime.fromISO(body.startAt)
-        .plus({ minutes: 40 })
-        .toUTC()
-        .toISO(),
+      endAt: DateTime.fromISO(body.startAt).plus({ minutes: 40 }).toUTC().toISO(),
     });
 
     expect(response.body.id).toEqual(expect.any(Number));
@@ -148,22 +138,13 @@ describe('Appointments API (e2e)', () => {
   it('should reject an occupied time with HTTP 409', async () => {
     const body = validBody();
 
-    await request(app.getHttpServer())
-      .post('/api/appointments')
-      .send(body)
-      .expect(201);
+    await request(app.getHttpServer()).post('/api/appointments').send(body).expect(201);
 
-    await request(app.getHttpServer())
-      .post('/api/appointments')
-      .send(body)
-      .expect(409);
+    await request(app.getHttpServer()).post('/api/appointments').send(body).expect(409);
   });
 
   it('should reject overlapping exams with different durations', async () => {
-    await request(app.getHttpServer())
-      .post('/api/appointments')
-      .send(validBody())
-      .expect(201);
+    await request(app.getHttpServer()).post('/api/appointments').send(validBody()).expect(201);
 
     await request(app.getHttpServer())
       .post('/api/appointments')
@@ -186,9 +167,7 @@ describe('Appointments API (e2e)', () => {
   });
 
   it('should reject dates without medical shifts', async () => {
-    const sunday = DateTime.fromISO(monday)
-      .minus({ days: 1 })
-      .toISODate();
+    const sunday = DateTime.fromISO(monday).minus({ days: 1 }).toISODate();
 
     await request(app.getHttpServer())
       .post('/api/appointments')
@@ -280,21 +259,12 @@ describe('Appointments API (e2e)', () => {
     const body = validBody();
 
     const responses = await Promise.all([
-      request(app.getHttpServer())
-        .post('/api/appointments')
-        .set('Idempotency-Key', key)
-        .send(body),
+      request(app.getHttpServer()).post('/api/appointments').set('Idempotency-Key', key).send(body),
 
-      request(app.getHttpServer())
-        .post('/api/appointments')
-        .set('Idempotency-Key', key)
-        .send(body),
+      request(app.getHttpServer()).post('/api/appointments').set('Idempotency-Key', key).send(body),
     ]);
 
-    expect(responses.map((response) => response.status)).toEqual([
-      201,
-      201,
-    ]);
+    expect(responses.map((response) => response.status)).toEqual([201, 201]);
 
     expect(responses[0].body.id).toBe(responses[1].body.id);
 

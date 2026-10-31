@@ -1,17 +1,6 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
-import {
-  ConflictException,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { QueryFailedError } from 'typeorm';
 
@@ -54,22 +43,15 @@ describe('AppointmentsService', () => {
       durationMinutes: 40,
     });
 
-    availabilityService.findAvailableSlots.mockResolvedValue([
-      '08:00',
-      '08:40',
-      '09:20',
-      '10:00',
-    ]);
+    availabilityService.findAvailableSlots.mockResolvedValue(['08:00', '08:40', '09:20', '10:00']);
 
     appointmentsRepository.existsBy.mockResolvedValue(false);
 
-    appointmentsRepository.save.mockImplementation(
-      async (appointment) => ({
-        id: 1,
-        ...appointment,
-        createdAt: new Date(),
-      }),
-    );
+    appointmentsRepository.save.mockImplementation(async (appointment) => ({
+      id: 1,
+      ...appointment,
+      createdAt: new Date(),
+    }));
 
     const moduleRef = await Test.createTestingModule({
       providers: [
@@ -111,9 +93,7 @@ describe('AppointmentsService', () => {
       }),
     );
 
-    expect(
-      availabilityService.findAvailableSlots,
-    ).toHaveBeenCalledWith(1, 17, '2030-01-07');
+    expect(availabilityService.findAvailableSlots).toHaveBeenCalledWith(1, 17, '2030-01-07');
   });
 
   it('should reject appointments in the past', async () => {
@@ -139,17 +119,13 @@ describe('AppointmentsService', () => {
   it('should reject a nonexistent exam', async () => {
     examsRepository.findOneBy.mockResolvedValue(null);
 
-    await expect(service.create(dto)).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(service.create(dto)).rejects.toThrow(NotFoundException);
   });
 
   it('should reject times outside the available schedule', async () => {
     availabilityService.findAvailableSlots.mockResolvedValue([]);
 
-    await expect(service.create(dto)).rejects.toThrow(
-      UnprocessableEntityException,
-    );
+    await expect(service.create(dto)).rejects.toThrow(UnprocessableEntityException);
 
     expect(appointmentsRepository.save).not.toHaveBeenCalled();
   });
@@ -158,9 +134,7 @@ describe('AppointmentsService', () => {
     availabilityService.findAvailableSlots.mockResolvedValue([]);
     appointmentsRepository.existsBy.mockResolvedValue(true);
 
-    await expect(service.create(dto)).rejects.toThrow(
-      ConflictException,
-    );
+    await expect(service.create(dto)).rejects.toThrow(ConflictException);
 
     expect(appointmentsRepository.save).not.toHaveBeenCalled();
   });
@@ -176,9 +150,7 @@ describe('AppointmentsService', () => {
 
     appointmentsRepository.save.mockRejectedValue(databaseError);
 
-    await expect(service.create(dto)).rejects.toThrow(
-      ConflictException,
-    );
+    await expect(service.create(dto)).rejects.toThrow(ConflictException);
   });
 
   it('should not hide unexpected database errors', async () => {

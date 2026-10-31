@@ -1,16 +1,7 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DateTime } from 'luxon';
-import {
-  type EntityManager,
-  LessThan,
-  MoreThan,
-  Repository,
-} from 'typeorm';
+import { type EntityManager, LessThan, MoreThan, Repository } from 'typeorm';
 
 import { Appointment } from '../appointments/entities/appointment.entity.js';
 import { DoctorShift } from '../doctors/entities/doctor-shift.entity.js';
@@ -42,14 +33,11 @@ export class AvailabilityService {
     date: string,
     manager?: EntityManager,
   ): Promise<string[]> {
-    const doctorsRepository =
-      manager?.getRepository(Doctor) ?? this.doctorsRepository;
+    const doctorsRepository = manager?.getRepository(Doctor) ?? this.doctorsRepository;
 
-    const examsRepository =
-      manager?.getRepository(Exam) ?? this.examsRepository;
+    const examsRepository = manager?.getRepository(Exam) ?? this.examsRepository;
 
-    const shiftsRepository =
-      manager?.getRepository(DoctorShift) ?? this.shiftsRepository;
+    const shiftsRepository = manager?.getRepository(DoctorShift) ?? this.shiftsRepository;
 
     const appointmentsRepository =
       manager?.getRepository(Appointment) ?? this.appointmentsRepository;
@@ -58,10 +46,7 @@ export class AvailabilityService {
       zone: CLINIC_TIME_ZONE,
     });
 
-    if (
-      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-      !selectedDate.isValid
-    ) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !selectedDate.isValid) {
       throw new BadRequestException('Invalid date. Expected YYYY-MM-DD.');
     }
 
@@ -115,9 +100,7 @@ export class AvailabilityService {
         .setZone(CLINIC_TIME_ZONE)
         .toFormat('HH:mm'),
 
-      endTime: DateTime.fromJSDate(appointment.endAt)
-        .setZone(CLINIC_TIME_ZONE)
-        .toFormat('HH:mm'),
+      endTime: DateTime.fromJSDate(appointment.endAt).setZone(CLINIC_TIME_ZONE).toFormat('HH:mm'),
     }));
 
     return getAvailableSlots({

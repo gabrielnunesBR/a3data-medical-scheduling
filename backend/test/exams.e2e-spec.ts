@@ -25,9 +25,7 @@ describe('Exams API (e2e)', () => {
   });
 
   it('should list all 30 exams', async () => {
-    const response = await request(app.getHttpServer())
-      .get('/api/exams')
-      .expect(200);
+    const response = await request(app.getHttpServer()).get('/api/exams').expect(200);
 
     expect(response.body).toHaveLength(30);
   });

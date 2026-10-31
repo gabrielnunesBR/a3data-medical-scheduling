@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -12,13 +11,9 @@ import { AppointmentsModule } from './modules/appointments/appointments.module.j
 
 @Module({
   imports: [
-
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath:
-        process.env.NODE_ENV === 'test'
-          ? '../.env.test'
-          : ['../.env', '.env'],
+      envFilePath: process.env.NODE_ENV === 'test' ? '../.env.test' : ['../.env', '.env'],
       validationSchema: envSchema,
     }),
 

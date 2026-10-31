@@ -5,15 +5,7 @@ import { Test } from '@nestjs/testing';
 import { DateTime } from 'luxon';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/config/configure-app.js';
@@ -44,10 +36,7 @@ describe('Appointments concurrency (e2e)', () => {
     return result;
   }
 
-  function appointmentBody(
-    time = '09:20',
-    examId = 17,
-  ) {
+  function appointmentBody(time = '09:20', examId = 17) {
     return {
       patientName,
       examId,
@@ -56,17 +45,13 @@ describe('Appointments concurrency (e2e)', () => {
     };
   }
 
-  async function sendAppointment(
-    body: ReturnType<typeof appointmentBody>,
-  ) {
+  async function sendAppointment(body: ReturnType<typeof appointmentBody>) {
     return request(app.getHttpServer())
       .post('/api/appointments')
       .send(body)
       .expect((response) => {
         if (![201, 409].includes(response.status)) {
-          throw new Error(
-            `Unexpected HTTP ${response.status}: ${JSON.stringify(response.body)}`,
-          );
+          throw new Error(`Unexpected HTTP ${response.status}: ${JSON.stringify(response.body)}`);
         }
       });
   }
@@ -92,11 +77,9 @@ describe('Appointments concurrency (e2e)', () => {
       throw new Error('Refusing to modify a non-test database.');
     }
 
-    const doctor = await dataSource
-      .getRepository(Doctor)
-      .findOneBy({
-        crm: 'CRM-MG 11111',
-      });
+    const doctor = await dataSource.getRepository(Doctor).findOneBy({
+      crm: 'CRM-MG 11111',
+    });
 
     if (!doctor) {
       throw new Error('Doctor seed is missing.');
@@ -136,40 +119,19 @@ describe('Appointments concurrency (e2e)', () => {
   it('should allow exactly one of eight concurrent bookings', async () => {
     const body = appointmentBody();
 
-    const responses = await Promise.all(
-      Array.from({ length: 8 }, () =>
-        sendAppointment(body),
-      ),
-    );
+    const responses = await Promise.all(Array.from({ length: 8 }, () => sendAppointment(body)));
 
-    const statuses = responses
-      .map((response) => response.status)
-      .sort((a, b) => a - b);
+    const statuses = responses.map((response) => response.status).sort((a, b) => a - b);
 
-    expect(statuses).toEqual([
-      201,
-      409,
-      409,
-      409,
-      409,
-      409,
-      409,
-      409,
-    ]);
+    expect(statuses).toEqual([201, 409, 409, 409, 409, 409, 409, 409]);
 
-    const appointments = await dataSource
-      .getRepository(Appointment)
-      .findBy({ patientName });
+    const appointments = await dataSource.getRepository(Appointment).findBy({ patientName });
 
     expect(appointments).toHaveLength(1);
 
-    expect(appointments[0].startAt).toEqual(
-      new Date(body.startAt),
-    );
+    expect(appointments[0].startAt).toEqual(new Date(body.startAt));
 
-    expect(appointments[0].endAt).toEqual(
-      new Date(appointmentAt('10:00')),
-    );
+    expect(appointments[0].endAt).toEqual(new Date(appointmentAt('10:00')));
   }, 20_000);
 
   it('should prevent concurrent partially overlapping bookings', async () => {
@@ -178,15 +140,11 @@ describe('Appointments concurrency (e2e)', () => {
       sendAppointment(appointmentBody('09:40', 1)),
     ]);
 
-    const statuses = responses
-      .map((response) => response.status)
-      .sort((a, b) => a - b);
+    const statuses = responses.map((response) => response.status).sort((a, b) => a - b);
 
     expect(statuses).toEqual([201, 409]);
 
-    const appointments = await dataSource
-      .getRepository(Appointment)
-      .findBy({ patientName });
+    const appointments = await dataSource.getRepository(Appointment).findBy({ patientName });
 
     expect(appointments).toHaveLength(1);
   });
@@ -197,23 +155,16 @@ describe('Appointments concurrency (e2e)', () => {
       sendAppointment(appointmentBody('08:40', 17)),
     ]);
 
-    expect(responses.map((response) => response.status)).toEqual([
-      201,
-      201,
-    ]);
+    expect(responses.map((response) => response.status)).toEqual([201, 201]);
 
-    const appointments = await dataSource
-      .getRepository(Appointment)
-      .find({
-        where: { patientName },
-        order: { startAt: 'ASC' },
-      });
+    const appointments = await dataSource.getRepository(Appointment).find({
+      where: { patientName },
+      order: { startAt: 'ASC' },
+    });
 
     expect(appointments).toHaveLength(2);
 
-    expect(appointments[0].endAt).toEqual(
-      appointments[1].startAt,
-    );
+    expect(appointments[0].endAt).toEqual(appointments[1].startAt);
   });
 
   it('should enforce the exclusion constraint in PostgreSQL', async () => {
@@ -241,9 +192,7 @@ describe('Appointments concurrency (e2e)', () => {
       },
     });
 
-    expect(
-      await repository.countBy({ patientName }),
-    ).toBe(1);
+    expect(await repository.countBy({ patientName })).toBe(1);
   });
 
   it('should allow different doctors to book the same time', async () => {
@@ -267,23 +216,16 @@ describe('Appointments concurrency (e2e)', () => {
       sendAppointment(rafaelBooking),
     ]);
 
-    expect(responses.map((response) => response.status)).toEqual([
-      201,
-      201,
-    ]);
+    expect(responses.map((response) => response.status)).toEqual([201, 201]);
 
-    const appointments = await dataSource
-      .getRepository(Appointment)
-      .findBy({ patientName });
+    const appointments = await dataSource.getRepository(Appointment).findBy({ patientName });
 
     expect(appointments).toHaveLength(2);
 
-    expect(
-      new Set(appointments.map((appointment) => appointment.doctorId)),
-    ).toEqual(new Set([doctorId, rafael.id]));
-
-    expect(appointments[0].startAt).toEqual(
-      appointments[1].startAt,
+    expect(new Set(appointments.map((appointment) => appointment.doctorId))).toEqual(
+      new Set([doctorId, rafael.id]),
     );
+
+    expect(appointments[0].startAt).toEqual(appointments[1].startAt);
   });
 });

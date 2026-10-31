@@ -22,14 +22,7 @@ describe('generateShiftSlots', () => {
   it('should generate 40-minute slots', () => {
     const slots = generateShiftSlots('08:00', '12:00', 40);
 
-    expect(slots).toEqual([
-      '08:00',
-      '08:40',
-      '09:20',
-      '10:00',
-      '10:40',
-      '11:20',
-    ]);
+    expect(slots).toEqual(['08:00', '08:40', '09:20', '10:00', '10:40', '11:20']);
   });
 
   it('should exclude slots that exceed shift end', () => {
@@ -47,12 +40,7 @@ describe('generateShiftSlots', () => {
   it('should support night shifts', () => {
     const slots = generateShiftSlots('19:00', '22:00', 40);
 
-    expect(slots).toEqual([
-      '19:00',
-      '19:40',
-      '20:20',
-      '21:00',
-    ]);
+    expect(slots).toEqual(['19:00', '19:40', '20:20', '21:00']);
   });
 
   it('should accept PostgreSQL TIME values', () => {
@@ -62,32 +50,19 @@ describe('generateShiftSlots', () => {
     expect(slots[5]).toBe('11:20');
   });
 
-  it.each([0, -20, 20.5])(
-    'should reject invalid duration %s',
-    (duration) => {
-      expect(() =>
-        generateShiftSlots('08:00', '12:00', duration),
-      ).toThrow(RangeError);
-    },
-  );
+  it.each([0, -20, 20.5])('should reject invalid duration %s', (duration) => {
+    expect(() => generateShiftSlots('08:00', '12:00', duration)).toThrow(RangeError);
+  });
 
   it('should reject invalid shift intervals', () => {
-    expect(() =>
-      generateShiftSlots('12:00', '08:00', 20),
-    ).toThrow(RangeError);
+    expect(() => generateShiftSlots('12:00', '08:00', 20)).toThrow(RangeError);
 
-    expect(() =>
-      generateShiftSlots('08:00', '08:00', 20),
-    ).toThrow(RangeError);
+    expect(() => generateShiftSlots('08:00', '08:00', 20)).toThrow(RangeError);
   });
 
   it('should reject invalid time formats', () => {
-    expect(() =>
-      generateShiftSlots('25:00', '12:00', 20),
-    ).toThrow(RangeError);
+    expect(() => generateShiftSlots('25:00', '12:00', 20)).toThrow(RangeError);
 
-    expect(() =>
-      generateShiftSlots('08:00:30', '12:00', 20),
-    ).toThrow(RangeError);
+    expect(() => generateShiftSlots('08:00:30', '12:00', 20)).toThrow(RangeError);
   });
 });

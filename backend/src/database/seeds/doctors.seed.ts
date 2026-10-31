@@ -14,11 +14,7 @@ type DoctorSeed = {
   shifts: ShiftSeed[];
 };
 
-function shiftsForDays(
-  weekdays: number[],
-  startTime: string,
-  endTime: string,
-): ShiftSeed[] {
+function shiftsForDays(weekdays: number[], startTime: string, endTime: string): ShiftSeed[] {
   return weekdays.map((weekday) => ({
     weekday,
     startTime,
@@ -73,68 +69,58 @@ async function main(): Promise<void> {
   try {
     await migrationDataSource.initialize();
 
-    const result = await migrationDataSource.transaction(
-      async (manager) => {
-        const insertedDoctors = await manager
-          .createQueryBuilder()
-          .insert()
-          .into(Doctor)
-          .values(
-            doctors.map(({ name, crm }) => ({
-              name,
-              crm,
-            })),
-          )
-          .orIgnore()
-          .returning('id')
-          .execute();
+    const result = await migrationDataSource.transaction(async (manager) => {
+      const insertedDoctors = await manager
+        .createQueryBuilder()
+        .insert()
+        .into(Doctor)
+        .values(
+          doctors.map(({ name, crm }) => ({
+            name,
+            crm,
+          })),
+        )
+        .orIgnore()
+        .returning('id')
+        .execute();
 
-        const persistedDoctors = await manager
-          .getRepository(Doctor)
-          .find({
-            select: {
-              id: true,
-              crm: true,
-            },
-            where: doctors.map(({ crm }) => ({ crm })),
-          });
+      const persistedDoctors = await manager.getRepository(Doctor).find({
+        select: {
+          id: true,
+          crm: true,
+        },
+        where: doctors.map(({ crm }) => ({ crm })),
+      });
 
-        const doctorIds = new Map(
-          persistedDoctors.map(({ id, crm }) => [crm, id]),
-        );
+      const doctorIds = new Map(persistedDoctors.map(({ id, crm }) => [crm, id]));
 
-        const shifts = doctors.flatMap(({ crm, shifts }) => {
-          const doctorId = doctorIds.get(crm);
+      const shifts = doctors.flatMap(({ crm, shifts }) => {
+        const doctorId = doctorIds.get(crm);
 
-          if (doctorId === undefined) {
-            throw new Error(`Médico não encontrado: ${crm}`);
-          }
+        if (doctorId === undefined) {
+          throw new Error(`Médico não encontrado: ${crm}`);
+        }
 
-          return shifts.map((shift) => ({
-            ...shift,
-            doctorId,
-          }));
-        });
+        return shifts.map((shift) => ({
+          ...shift,
+          doctorId,
+        }));
+      });
 
-        const insertedShifts = await manager
-          .createQueryBuilder()
-          .insert()
-          .into(DoctorShift)
-          .values(shifts)
-          .orIgnore()
-          .returning('id')
-          .execute();
+      const insertedShifts = await manager
+        .createQueryBuilder()
+        .insert()
+        .into(DoctorShift)
+        .values(shifts)
+        .orIgnore()
+        .returning('id')
+        .execute();
 
-        return {
-          doctorsInserted: (
-            insertedDoctors.raw as Array<{ id: number }>
-          ).length,
-          shiftsInserted: (
-            insertedShifts.raw as Array<{ id: number }>
-          ).length,
-        };
-      },
-    );
+      return {
+        doctorsInserted: (insertedDoctors.raw as Array<{ id: number }>).length,
+        shiftsInserted: (insertedShifts.raw as Array<{ id: number }>).length,
+      };
+    });
 
     console.log(`${doctors.length} médicos processados.`);
     console.log(`${result.doctorsInserted} médicos inseridos.`);

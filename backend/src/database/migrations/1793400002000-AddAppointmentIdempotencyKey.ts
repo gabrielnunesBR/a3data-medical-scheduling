@@ -1,11 +1,6 @@
-import {
-  type MigrationInterface,
-  type QueryRunner,
-} from 'typeorm';
+import { type MigrationInterface, type QueryRunner } from 'typeorm';
 
-export class AddAppointmentIdempotencyKey1793400002000
-  implements MigrationInterface
-{
+export class AddAppointmentIdempotencyKey1793400002000 implements MigrationInterface {
   name = 'AddAppointmentIdempotencyKey1793400002000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

@@ -18,10 +18,7 @@ describe('Availability API (e2e)', () => {
   let app: INestApplication;
   let helenaId: number;
 
-  const futureMonday = DateTime.now()
-    .setZone(CLINIC_TIME_ZONE)
-    .plus({ weeks: 2 })
-    .startOf('week');
+  const futureMonday = DateTime.now().setZone(CLINIC_TIME_ZONE).plus({ weeks: 2 }).startOf('week');
 
   const monday = futureMonday.toISODate();
   const sunday = futureMonday.minus({ days: 1 }).toISODate();
@@ -41,15 +38,11 @@ describe('Availability API (e2e)', () => {
 
     await app.init();
 
-    const response = await request(app.getHttpServer())
-      .get('/api/doctors')
-      .expect(200);
+    const response = await request(app.getHttpServer()).get('/api/doctors').expect(200);
 
     const doctors = response.body as DoctorResponse[];
 
-    const helena = doctors.find(
-      (doctor) => doctor.crm === 'CRM-MG 11111',
-    );
+    const helena = doctors.find((doctor) => doctor.crm === 'CRM-MG 11111');
 
     if (!helena) {
       throw new Error('Doctor seed must be executed before E2E tests.');

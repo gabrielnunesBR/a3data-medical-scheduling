@@ -1,8 +1,6 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class UniqueDoctorShifts1793400001000
-  implements MigrationInterface
-{
+export class UniqueDoctorShifts1793400001000 implements MigrationInterface {
   name = 'UniqueDoctorShifts1793400001000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {

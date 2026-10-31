@@ -10,14 +10,7 @@ import { AvailabilityController } from './availability.controller.js';
 import { AvailabilityService } from './availability.service.js';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([
-      Doctor,
-      Exam,
-      DoctorShift,
-      Appointment,
-    ]),
-  ],
+  imports: [TypeOrmModule.forFeature([Doctor, Exam, DoctorShift, Appointment])],
   controllers: [AvailabilityController],
   providers: [AvailabilityService],
   exports: [AvailabilityService],
