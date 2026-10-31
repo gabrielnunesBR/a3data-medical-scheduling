@@ -28,7 +28,7 @@ O fluxo principal está implementado no **backend NestJS** e no **frontend React
 ![Swagger UI com os cinco endpoints documentados da API de agendamento](docs/screenshots/api-swagger.png)
 
 A documentação interativa da API está disponível em
-[`/api/docs`](http://localhost:3000/api/docs) com o backend em execução.
+[`/api/docs`](http://localhost:3000/api/docs) com o backend local ou em [`localhost:8080/api/docs`](http://localhost:8080/api/docs) com Docker Compose completo.
 
 As capturas mostram a jornada de agendamento em diferentes tamanhos de tela.
 
@@ -42,7 +42,7 @@ As capturas mostram a jornada de agendamento em diferentes tamanhos de tela.
 | Frontend                       | React, TypeScript, Vite, Tailwind CSS, TanStack Query, React Hook Form, React DayPicker |
 | Testes do backend              | Vitest, Supertest                                                                       |
 | Testes do frontend             | Vitest, React Testing Library, MSW, Playwright (Chromium), axe-core                     |
-| Infraestrutura                 | Docker Compose, npm Workspaces, GitHub Actions                                          |
+| Infraestrutura                 | Docker Compose, Nginx, npm Workspaces, GitHub Actions                                   |
 | Documentação e observabilidade | Swagger UI, coleção Postman/Insomnia, logs JSON e Request ID                            |
 
 ## Arquitetura e decisões técnicas
@@ -78,7 +78,7 @@ O fluxo é dividido em seleção de exame, escolha de médico/data/horário, rev
 - Os horários candidatos são gerados a partir do **início de cada turno**, em intervalos iguais à duração do exame, sem ultrapassar o fim do expediente.
 - O fuso horário da clínica é `America/Sao_Paulo`. Os instantes são transmitidos com indicação explícita de fuso e podem ser persistidos ou serializados em UTC.
 - O horário de término é calculado exclusivamente no backend.
-- O frontend utiliza o proxy `/api` do Vite durante o desenvolvimento; a API é executada separadamente.
+- O frontend utiliza o proxy `/api` do Vite durante o desenvolvimento; no Docker Compose, o Nginx encaminha `/api` para a API na rede interna.
 
 ## Funcionalidades
 
@@ -124,7 +124,11 @@ a3data-medical-scheduling/
 │       ├── app-desktop-booking.png
 │       ├── app-mobile-review.png
 │       └── app-mobile-success.png
-├── compose.yaml             # PostgreSQL de desenvolvimento e de testes
+├── backend/Dockerfile       # Imagem da API e tarefas de preparação do banco
+├── frontend/Dockerfile      # Build React e execução com Nginx
+├── frontend/nginx.conf      # Interface, SPA e proxy /api
+├── .dockerignore            # Arquivos excluídos das imagens
+├── compose.yaml             # Aplicação completa e banco isolado de testes
 ├── .env.example
 ├── .env.test.example
 └── README.md
@@ -136,10 +140,54 @@ As decisões sobre a jornada do paciente, o design system, as cores, a tipografi
 
 ## Pré-requisitos
 
-- **Node.js 24** e npm.
-- **Docker** com Docker Compose.
-- Git, para clonar e versionar o projeto.
-- Chromium do Playwright, somente para executar os testes de navegador (instruções abaixo).
+Para executar **toda a aplicação via Docker**, é necessário apenas Docker com Compose e Git; não é preciso instalar Node.js/npm localmente.
+
+Para o **desenvolvimento local** e execução de testes, também são necessários Node.js 24 e npm. Os testes de navegador exigem o Chromium do Playwright (instruções abaixo).
+
+## Execução simplificada com Docker Compose
+
+Para um avaliador iniciar **frontend, backend e PostgreSQL** sem instalar Node.js localmente:
+
+```bash
+git clone https://github.com/gabrielnunesBR/a3data-medical-scheduling.git
+cd a3data-medical-scheduling
+cp .env.example .env
+```
+
+Defina uma senha local em `POSTGRES_PASSWORD` dentro do `.env` e execute:
+
+```bash
+docker compose up -d --build
+```
+
+Aguarde o serviço `web` ficar `healthy` em `docker compose ps`. O Compose aguarda o banco de dados, aplica as migrations e executa os dois seeds antes de disponibilizar a API e o frontend.
+
+| Serviço                   | Endereço                           |
+| ------------------------- | ---------------------------------- |
+| Aplicação React (Nginx)   | `http://localhost:8080`            |
+| Swagger via Nginx         | `http://localhost:8080/api/docs`   |
+| Health check via Nginx    | `http://localhost:8080/api/health` |
+| PostgreSQL (acesso local) | `127.0.0.1:5433`                   |
+
+A porta da aplicação pode ser alterada definindo `WEB_PORT` no `.env` (por exemplo, `WEB_PORT=8081`). A porta local do PostgreSQL continua configurável por `POSTGRES_PORT`. A API não publica a porta `3000` no host; o Nginx encaminha as requisições `/api` pela rede interna do Compose.
+
+Comandos úteis:
+
+```bash
+docker compose ps
+docker compose logs --tail=100 db-init api web
+docker compose down
+```
+
+O container `db-init` é uma tarefa de execução única: deve terminar com **código 0**. As migrations e os seeds são idempotentes. `docker compose down` preserva o volume do banco. Para uma reinicialização totalmente limpa,
+`docker compose --profile test down --remove-orphans --volumes` remove os containers e volumes
+**deste projeto**, incluindo os dois bancos PostgreSQL. Isso apaga permanentemente os dados
+locais de desenvolvimento e testes: use somente quando quiser reiniciar do zero.
+A execução normal não exige essa limpeza.
+
+> **Nota:** esta configuração é voltada à avaliação local, não à publicação em produção. O Nginx serve HTTP no endereço de loopback e confia em exatamente um proxy antes da API. Para um deploy público, seriam necessários HTTPS, segredos externos e uma configuração de proxies conforme a infraestrutura real.
+
+O fluxo antigo de desenvolvimento, utilizando Vite e NestJS separadamente, continua disponível abaixo.
 
 ## Instalação e execução local
 
@@ -577,7 +625,7 @@ npm run lint --workspace=frontend
 npx prettier . --check
 ```
 
-O projeto compartilha uma configuração do Prettier para padronizar código no frontend e no backend.
+O projeto compartilha uma configuração do Prettier para padronizar código no frontend e no backend. O ambiente Docker não modifica a execução local desses comandos.
 
 ## Integração contínua
 

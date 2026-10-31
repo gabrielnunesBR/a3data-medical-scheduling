@@ -1,3 +1,15 @@
+x-backend-environment: &backend-environment
+  NODE_ENV: production
+  POSTGRES_HOST: db
+  POSTGRES_PORT: '5432'
+  POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+  POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+
+x-backend-build: &backend-build
+  context: .
+  dockerfile: backend/Dockerfile
+
 services:
   db:
     image: postgres:17
@@ -22,6 +34,76 @@ services:
       timeout: 3s
       retries: 10
       start_period: 10s
+
+  db-init:
+    build: *backend-build
+    image: a3data-medical-backend:${IMAGE_TAG:-0.1.0}
+    environment: *backend-environment
+    depends_on:
+      db:
+        condition: service_healthy
+
+    # Use the existing TypeORM CLI without rebuilding inside the container.
+    command:
+      - sh
+      - -ec
+      - |
+        node ../node_modules/typeorm/cli.js migration:run -d dist/database/data-source.js
+        node dist/database/seeds/exams.seed.js
+        node dist/database/seeds/doctors.seed.js
+    restart: 'no'
+
+  api:
+    build: *backend-build
+    image: a3data-medical-backend:${IMAGE_TAG:-0.1.0}
+    restart: unless-stopped
+
+    environment:
+      <<: *backend-environment
+      # Nginx is the only path to the API; it overwrites X-Forwarded-For.
+      TRUST_PROXY_HOPS: '1'
+
+    expose:
+      - '3000'
+
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+
+    image: a3data-medical-web:${IMAGE_TAG:-0.1.0}
+    restart: unless-stopped
+
+    ports:
+      - '127.0.0.1:${WEB_PORT:-8080}:80'
+
+    depends_on:
+      api:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget -q -O /dev/null http://127.0.0.1/healthz || exit 1
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   db_test:
     image: postgres:17

@@ -51,6 +51,19 @@ describe('Environment configuration', () => {
     expect(result.POSTGRES_HOST).toBe('127.0.0.1');
     expect(result.POSTGRES_PORT).toBe(5433);
     expect(result.NODE_ENV).toBe('development');
+    expect(result.TRUST_PROXY_HOPS).toBe('0');
+  });
+
+  it('should accept one trusted proxy hop', () => {
+    const result = envSchema.parse({ ...validEnv, TRUST_PROXY_HOPS: '1' });
+
+    expect(result.TRUST_PROXY_HOPS).toBe('1');
+  });
+
+  it('should reject unsupported proxy configurations', () => {
+    const result = envSchema.safeParse({ ...validEnv, TRUST_PROXY_HOPS: '2' });
+
+    expect(result.success).toBe(false);
   });
 
   it('should reject a development database in test environment', () => {
