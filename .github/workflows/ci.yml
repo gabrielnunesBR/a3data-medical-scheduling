@@ -58,7 +58,7 @@ jobs:
         run: npm run test --workspace=backend -- --run
 
       - name: Test frontend
-        run: npm run test --workspace=frontend
+        run: npm run test --workspace=frontend -- --run
 
       - name: Build backend and frontend
         run: npm run build
