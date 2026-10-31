@@ -1,8 +1,8 @@
 # Agendamento de Exames de Imagem
 
-Aplicação full-stack desenvolvida para o desafio técnico da **A3Data**. O sistema permite buscar exames, consultar a disponibilidade dos médicos e agendar exames de imagem, respeitando os turnos de atendimento e impedindo reservas sobrepostas.
+Aplicação full-stack desenvolvida para o desafio técnico da **A3Data**. Permite pesquisar exames de imagem, selecionar um médico, consultar horários disponíveis e confirmar agendamentos, respeitando os turnos de atendimento e impedindo reservas sobrepostas.
 
-> **Estado atual:** a API REST está implementada, com testes unitários e E2E. A interface web em React está em desenvolvimento.
+O fluxo principal está implementado no **backend NestJS** e no **frontend React**, com testes unitários, de integração HTTP e de ponta a ponta em navegador real.
 
 ## Tecnologias
 
@@ -11,47 +11,53 @@ Aplicação full-stack desenvolvida para o desafio técnico da **A3Data**. O sis
 | Backend | Node.js 24, NestJS, TypeScript, TypeORM |
 | Banco de dados | PostgreSQL 17 |
 | Validação e datas | Zod, Luxon |
-| Frontend | React, TypeScript, Vite |
-| Testes | Vitest, Supertest |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query, React Hook Form, React DayPicker |
+| Testes do backend | Vitest, Supertest |
+| Testes do frontend | Vitest, React Testing Library, MSW, Playwright (Chromium) |
 | Infraestrutura | Docker Compose, npm Workspaces |
+
+## Funcionalidades
+
+- Busca de exames por nome, com duração do procedimento.
+- Listagem de médicos e consulta da disponibilidade por data e exame.
+- Agendamento com nome do paciente, médico, exame e horário selecionado.
+- Validação de expediente, duração, horários passados e conflitos de reserva.
+- Proteção contra agendamentos simultâneos sobrepostos no PostgreSQL.
+- Fluxo web responsivo em **português brasileiro**, com revisão e confirmação do agendamento.
+- Limitação de requisições ao endpoint público de criação de agendamentos.
 
 ## Estrutura do projeto
 
 ```text
 a3data-medical-scheduling/
-├── backend/           # API REST e regras de negócio
-├── frontend/          # Interface web React (em desenvolvimento)
-├── challenge/         # Enunciado e arquivos originais do desafio
+├── backend/                 # API REST, regras de negócio, migrations e seeds
+├── frontend/                # Interface React e testes de navegador
+├── challenge/               # Enunciado e arquivos originais do desafio
 │   └── dados/
 │       ├── exames.csv
 │       └── medicos.md
-├── compose.yaml       # PostgreSQL de desenvolvimento e de testes
+├── docs/
+│   └── ux-ui-decisions.md  # Diretrizes e decisões de design
+├── compose.yaml             # PostgreSQL de desenvolvimento e de testes
 ├── .env.example
 ├── .env.test.example
 └── README.md
 ```
 
-## Documentação
+### Documentação complementar
 
-### Diretrizes de UX/UI
-
-As decisões de design da interface estão documentadas em
-[Diretrizes de UX/UI](docs/ux-ui-decisions.md).
-
-O documento apresenta as referências utilizadas na pesquisa,
-a jornada de agendamento, o design system, a paleta de cores,
-a tipografia, os padrões de acessibilidade e as diretrizes
-de responsividade e experiência do usuário.
+As decisões sobre a jornada do paciente, o design system, as cores, a tipografia, a responsividade e a acessibilidade estão registradas em [Diretrizes de UX/UI](docs/ux-ui-decisions.md).
 
 ## Pré-requisitos
 
-- Node.js 24 (recomendado) e npm;
-- Docker com Docker Compose;
-- Git (para clonar e versionar o projeto).
+- **Node.js 24** e npm.
+- **Docker** com Docker Compose.
+- Git, para clonar e versionar o projeto.
+- Chromium do Playwright, somente para executar os testes de navegador (instruções abaixo).
 
 ## Instalação e execução local
 
-Todos os comandos abaixo devem ser executados na **raiz do repositório**, salvo indicação em contrário.
+Execute os comandos a seguir **na raiz do repositório**, salvo indicação contrária.
 
 ### 1. Instalar as dependências
 
@@ -65,23 +71,21 @@ npm install
 cp .env.example .env
 ```
 
-Edite o arquivo `.env` e defina uma senha local para `POSTGRES_PASSWORD`. Não versione esse arquivo.
+Edite `.env` e defina uma senha local em `POSTGRES_PASSWORD`. Não versione arquivos com credenciais.
 
-### 3. Iniciar o PostgreSQL
+### 3. Iniciar o banco de desenvolvimento
 
 ```bash
 docker compose up -d db
 ```
 
-Configuração padrão de desenvolvimento:
-
-| Parâmetro | Valor |
+| Parâmetro | Valor padrão |
 | --- | --- |
 | Host | `127.0.0.1` |
 | Porta publicada | `5433` |
 | Banco | `medical_scheduling` |
 | Usuário | `medical_app` |
-| Senha | Definida em `.env` |
+| Senha | Configurada em `.env` |
 
 ### 4. Aplicar as migrations
 
@@ -89,64 +93,65 @@ Configuração padrão de desenvolvimento:
 npm run migration:run --workspace=backend
 ```
 
-O projeto utiliza TypeORM com `synchronize: false`. Portanto, a estrutura do banco é mantida por **migrations**, e não pela sincronização automática de entidades.
-
-Para consultar o estado das migrations:
+A estrutura do PostgreSQL é controlada por migrations do TypeORM; a opção `synchronize` permanece desabilitada. Para verificar o histórico:
 
 ```bash
 npm run migration:show --workspace=backend
 ```
 
-### 5. Importar os dados iniciais
+### 5. Importar os dados de referência
 
 ```bash
 npm run seed:exams --workspace=backend
 npm run seed:doctors --workspace=backend
 ```
 
-Os seeds importam:
+Os seeds importam **30 exames** de `challenge/dados/exames.csv`, preservando seus IDs, e **5 médicos com 36 turnos semanais**, conforme `challenge/dados/medicos.md`.
 
-- **30 exames**, a partir de `challenge/dados/exames.csv`, preservando os IDs originais;
-- **5 médicos e 36 turnos semanais**, conforme `challenge/dados/medicos.md`.
+Ambos são idempotentes: podem ser executados novamente sem duplicar ou sobrescrever os registros existentes. A importação dos médicos e turnos é transacional.
 
-Os dois seeds são **idempotentes**: podem ser executados novamente sem duplicar ou sobrescrever registros existentes. O seed dos médicos e turnos é transacional.
+### 6. Iniciar backend e frontend
 
-### 6. Iniciar a aplicação
-
-API NestJS:
+Em um terminal:
 
 ```bash
 npm run dev:api
 ```
 
-Frontend React (em outro terminal):
+Em outro terminal:
 
 ```bash
 npm run dev:web
 ```
 
-A API utiliza, por padrão, `http://localhost:3000`. A interface React ainda está em desenvolvimento.
+| Serviço | Endereço padrão |
+| --- | --- |
+| API NestJS | `http://localhost:3000` |
+| Frontend React | `http://localhost:5173` |
 
-### Build
+Durante o desenvolvimento, o Vite encaminha as chamadas a `/api` para o backend por meio de seu proxy local.
+
+### Compilação
 
 ```bash
 npm run build
 ```
 
-Para compilar somente o backend:
+Para compilar separadamente:
 
 ```bash
 npm run build --workspace=backend
+npm run build --workspace=frontend
 ```
 
 ## API REST
 
-| Método | Rota | Descrição |
+| Método | Endpoint | Finalidade |
 | --- | --- | --- |
-| `GET` | `/api/exams?search=...` | Listar e buscar exames pelo nome |
+| `GET` | `/api/exams?search=...` | Listar ou pesquisar exames pelo nome |
 | `GET` | `/api/doctors` | Listar médicos |
 | `GET` | `/api/doctors/:id/availability?examId=...&date=...` | Consultar horários disponíveis |
-| `POST` | `/api/appointments` | Criar um agendamento |
+| `POST` | `/api/appointments` | Confirmar um agendamento |
 
 ### Buscar exames
 
@@ -154,7 +159,7 @@ npm run build --workspace=backend
 curl "http://localhost:3000/api/exams?search=ressonancia"
 ```
 
-O parâmetro `search` é opcional. A busca é realizada pelo nome do exame.
+O parâmetro `search` é opcional. Sem ele, a API retorna o catálogo de exames.
 
 ### Listar médicos
 
@@ -162,29 +167,23 @@ O parâmetro `search` é opcional. A busca é realizada pelo nome do exame.
 curl "http://localhost:3000/api/doctors"
 ```
 
-A resposta contém os identificadores necessários para consultar a disponibilidade e criar agendamentos.
+A resposta contém os identificadores dos médicos, necessários para consultar disponibilidade e criar agendamentos.
 
 ### Consultar disponibilidade
-
-```http
-GET /api/doctors/:id/availability?examId=17&date=2030-01-07
-```
-
-Parâmetros:
-
-| Campo | Local | Descrição |
-| --- | --- | --- |
-| `id` | URL | Identificador do médico |
-| `examId` | Query | Identificador do exame |
-| `date` | Query | Data no formato `YYYY-MM-DD` |
-
-Exemplo (substitua `1` pelo ID real do médico):
 
 ```bash
 curl "http://localhost:3000/api/doctors/1/availability?examId=17&date=2030-01-07"
 ```
 
-Exemplo ilustrativo de resposta, para um médico com turno das 08h às 12h e exame de 40 minutos, sem reservas existentes:
+| Parâmetro | Local | Descrição |
+| --- | --- | --- |
+| `id` | URL | Identificador inteiro positivo do médico |
+| `examId` | Query string | Identificador inteiro positivo do exame |
+| `date` | Query string | Data no formato `YYYY-MM-DD` |
+
+O ID `1` é ilustrativo; consulte o ID real em `GET /api/doctors`.
+
+Exemplo **ilustrativo** de resposta para um turno das 08h às 12h e exame de 40 minutos, sem agendamentos existentes:
 
 ```json
 [
@@ -197,31 +196,11 @@ Exemplo ilustrativo de resposta, para um médico com turno das 08h às 12h e exa
 ]
 ```
 
-Os horários são retornados no formato `HH:mm`, considerando a duração do exame, a grade de turnos do médico, os agendamentos já realizados e a data atual. Se não houver horários disponíveis, a API retorna `[]` com HTTP 200.
+A API retorna horários no formato `HH:mm`, considerando a duração do exame, os turnos do médico, os agendamentos existentes e o instante atual. Quando não há horários disponíveis, retorna `200 OK` com `[]`.
 
-**Fuso horário da clínica:** `America/Sao_Paulo`.
+**Fuso horário da clínica:** `America/Sao_Paulo` (horário de Brasília).
 
 ### Criar agendamento
-
-```http
-POST /api/appointments
-Content-Type: application/json
-```
-
-Exemplo de corpo JSON:
-
-```json
-{
-  "patientName": "João Silva",
-  "examId": 17,
-  "doctorId": 1,
-  "startAt": "2030-01-07T09:20:00-03:00"
-}
-```
-
-O campo `startAt` deve ser uma data e hora ISO 8601 com fuso explícito (por exemplo, `-03:00` ou `Z`). O horário de término (`endAt`) é calculado **exclusivamente no backend**, com base na duração do exame.
-
-Exemplo de requisição:
 
 ```bash
 curl -i -X POST "http://localhost:3000/api/appointments" \
@@ -234,158 +213,82 @@ curl -i -X POST "http://localhost:3000/api/appointments" \
   }'
 ```
 
-Em caso de sucesso, a API retorna **HTTP 201**, com o identificador do agendamento, os dados do paciente, médico, exame, instantes de início e término e data de criação. Os instantes podem ser serializados em UTC.
+| Campo | Descrição |
+| --- | --- |
+| `patientName` | Nome do paciente, com até 160 caracteres |
+| `examId` | Identificador do exame |
+| `doctorId` | Identificador do médico |
+| `startAt` | Data e hora ISO 8601 com fuso explícito (`-03:00` ou `Z`) |
 
-#### Respostas e erros
+O horário de término (`endAt`) é calculado **no backend** a partir da duração cadastrada para o exame. Em caso de sucesso, a API retorna `201 Created`, incluindo o ID da reserva, os dados do agendamento e a data de criação. Os instantes podem ser serializados em UTC.
 
-| HTTP | Significado |
+| Código HTTP | Situação |
 | --- | --- |
 | `201 Created` | Agendamento confirmado |
 | `400 Bad Request` | Dados de entrada inválidos |
 | `404 Not Found` | Médico ou exame inexistente |
-| `409 Conflict` | Horário ocupado ou conflito de reserva |
-| `422 Unprocessable Entity` | Horário passado, fora do expediente ou fora da grade de horários |
+| `409 Conflict` | Horário ocupado ou conflito com outra reserva |
+| `422 Unprocessable Entity` | Horário passado, fora do expediente ou fora da grade válida |
+| `429 Too Many Requests` | Limite de tentativas de agendamento excedido |
 
 ## Regras de negócio e integridade
 
-- Cada exame possui duração própria, utilizada para calcular seus horários possíveis.
-- Os horários candidatos são gerados **a partir do início de cada turno**, em incrementos iguais à duração do exame.
-- Um exame deve caber integralmente no turno do médico.
-- Não são oferecidos horários passados nem horários incompatíveis com o expediente.
-- O início solicitado deve pertencer à grade válida do exame; não basta haver um intervalo livre arbitrário.
-- Todos os médicos podem realizar todos os exames previstos no desafio.
-- **Um médico não pode possuir agendamentos com intervalos sobrepostos.**
-- **Médicos diferentes podem atender simultaneamente.**
-- Agendamentos consecutivos são permitidos quando não há sobreposição.
-- A disponibilidade é reavaliada na criação do agendamento, pois pode mudar entre a consulta e a confirmação.
+- Cada exame possui uma duração utilizada para gerar os horários possíveis.
+- A grade é calculada **a partir do início de cada turno**, em incrementos iguais à duração do exame.
+- O exame deve caber integralmente dentro do turno.
+- Horários passados ou fora do expediente não podem ser reservados.
+- Todos os médicos cadastrados podem realizar todos os exames do desafio.
+- A disponibilidade é revalidada no momento da confirmação, pois pode mudar após a consulta.
+- Dois agendamentos do **mesmo médico** não podem possuir intervalos sobrepostos.
+- **Médicos diferentes** podem atender simultaneamente.
+- Agendamentos consecutivos são permitidos, desde que não haja sobreposição.
 
-### Proteção contra concorrência
+### Concorrência no PostgreSQL
 
-Além das validações de negócio no NestJS, o PostgreSQL possui uma **exclusion constraint GiST** na tabela `appointments`, baseada na igualdade de `doctor_id` e na sobreposição de intervalos `tstzrange(start_at, end_at, '[)')`.
+Além das validações da aplicação, a tabela `appointments` utiliza uma **exclusion constraint GiST**:
 
-Essa restrição impede que duas requisições concorrentes confirmem agendamentos conflitantes para o mesmo médico. Uma violação da constraint (SQLSTATE `23P01`) é traduzida pela API para **HTTP 409 Conflict**.
+```sql
+EXCLUDE USING GIST (
+  doctor_id WITH =,
+  tstzrange(start_at, end_at, '[)') WITH &&
+)
+```
 
-Também existe uma restrição `CHECK (start_at < end_at)` para garantir a validade dos intervalos armazenados.
+Ela impede que duas requisições concorrentes confirmem horários conflitantes para o mesmo médico. O PostgreSQL retorna SQLSTATE `23P01` quando a restrição é violada, e a API converte o erro em `409 Conflict`.
+
+A tabela também possui `CHECK (start_at < end_at)`, impedindo intervalos com duração nula ou negativa.
+
+### Proteção contra excesso de requisições
+
+O endpoint `POST /api/appointments` utiliza `@nestjs/throttler` para aplicar **20 requisições por minuto por endereço IP**. Ao exceder o limite, retorna `429 Too Many Requests`. Os endpoints de consulta não recebem esse limite nesta configuração.
+
+O contador atual utiliza armazenamento **em memória**, adequado ao ambiente do desafio com uma única instância. Uma implantação distribuída exigiria armazenamento compartilhado ou rate limiting na infraestrutura. Atrás de um reverse proxy, a identificação do IP precisa considerar apenas proxies confiáveis.
+
+Essa proteção reduz abuso, mas não substitui mecanismos de verificação de identidade, controle de acesso ou prevenção de reservas fraudulentas em uma aplicação real.
 
 ## Testes automatizados
 
-O backend utiliza **Vitest** para testes unitários e **Supertest** para testes HTTP E2E. Os testes que acessam o PostgreSQL utilizam um banco separado do ambiente de desenvolvimento.
+O projeto possui três níveis de testes:
 
-### Testes E2E no navegador
+| Tipo | Ferramentas | Escopo |
+| --- | --- | --- |
+| Unitários e componentes | Vitest, React Testing Library, MSW | Regras de negócio, formulários e estados da interface |
+| E2E HTTP | Vitest, Supertest, PostgreSQL | Endpoints, persistência, validações e concorrência |
+| E2E no navegador | Playwright, Chromium | Jornada real entre React, NestJS e PostgreSQL |
 
-O frontend utiliza Playwright com Chromium para validar
-a jornada real de agendamento, integrando React, NestJS
-e PostgreSQL.
+### 1. Preparar o banco de testes
 
-Os testes verificam:
-
-- Busca e seleção de exames.
-- Seleção de médico, data e horário.
-- Revisão e confirmação de agendamentos.
-- Persistência real no PostgreSQL.
-- Atualização da disponibilidade após uma reserva.
-- Tratamento de conflitos HTTP 409.
-
-#### Executar
-
-Inicie o banco de testes:
-
-    docker compose --profile test up -d db_test
-
-Execute os testes:
-
-    npm run test:browser --workspace=frontend
-
-Para acompanhar o navegador:
-
-    npm run test:browser --workspace=frontend -- --headed
-
-O Playwright inicia automaticamente o frontend na porta
-5174 e a API de testes na porta 3100.
-
-As operações de escrita utilizam exclusivamente o banco
-medical_scheduling_test, na porta 5434.
-
-Os agendamentos criados pelos testes são identificados
-individualmente e removidos após cada cenário.
-```
-
-## 8. Commit
-
-Depois de validar:
-
-```bash
-git status
-git diff --check
-```
-
-Em seguida:
-
-```bash
-git add \
-  frontend/e2e/booking-completion.e2e.ts \
-  frontend/e2e/test-database.ts \
-  frontend/tsconfig.node.json \
-  frontend/package.json \
-  package-lock.json \
-  README.md
-
-git commit -m "test: verify complete booking flow with Playwright"
-
-git push
-```
-
-## Checklist da Task 7
-
-{@body const tasks=["Dependências pg e @types/pg instaladas","Cliente PostgreSQL de testes criado com proteção de ambiente","Teste de agendamento pelo Chromium implementado","Persistência confirmada diretamente no PostgreSQL","Data, horário, exame e médico persistidos corretamente","Teste de conflito HTTP 409 implementado","Lista de disponibilidade atualizada após o conflito","Limpeza dos registros de teste funcionando","Três testes Playwright passando","TypeScript, Vitest, build e lint passando","README atualizado e commit realizado"]}
-{@body const [done,setDone]=DIL.useState([])}
-<box border radius="lg" padding={3} gap={2}>
-  <row align="center" justify="between">
-    **Sprint 4 — Task 7**
-    <text color="secondary" size="xs" tabularNums>{done.length}/{tasks.length}</text>
-  </row>
-  {#each tasks as task}
-    <checkbox key={task} checked={done.includes(task)} onChange={value=>setDone(previous=>value?[...previous,task]:previous.filter(x=>x!==task))} lineThrough={false}>{task}</checkbox>
-  {/each}
-</box>
-
----
-
-## Próxima etapa — Revisão de qualidade para entrega
-
-Com estes testes passando, teremos comprovado o fluxo completo com navegador, backend e banco reais, incluindo a recuperação de um conflito de reserva.
-
-Antes de acrescentar funcionalidades opcionais, recomendo uma revisão final em três frentes: responsividade e acessibilidade da interface, segurança e confiabilidade da API, e experiência de instalação para o avaliador.
-
-Também revisitaremos dois pontos importantes para uma aplicação com pretensão de produção: **rate limiting no endpoint público de agendamento e idempotência das requisições de criação**.
-
-Não implementaremos esses incrementos automaticamente; vamos avaliar custo, risco e aderência ao desafio.
-
-**Por enquanto, conclua esta Task 7.** Depois de validarmos os testes reais, teremos uma base sólida para decidir quais melhorias adicionais merecem entrar antes da entrega à A3Data.
-
-### Testes unitários
-
-```bash
-npm run test --workspace=backend -- --run
-```
-
-### Configurar o banco de testes
-
-Crie o arquivo de ambiente:
+O ambiente de testes usa uma instância PostgreSQL independente. Na raiz do repositório:
 
 ```bash
 cp .env.test.example .env.test
 ```
 
-Configure `POSTGRES_PASSWORD` em `.env.test` com a mesma senha utilizada em `.env`. O arquivo `.env.test` não deve ser versionado.
-
-Inicie o banco de testes:
+Configure `POSTGRES_PASSWORD` com a mesma senha local usada no `.env` e mantenha o arquivo fora do Git.
 
 ```bash
 docker compose --profile test up -d db_test
 ```
-
-Configuração do ambiente de testes:
 
 | Parâmetro | Valor |
 | --- | --- |
@@ -394,7 +297,7 @@ Configuração do ambiente de testes:
 | Banco | `medical_scheduling_test` |
 | Volume | `postgres_test_data` |
 
-Prepare o schema e os dados de referência **no banco de testes**:
+Aplique as mesmas migrations e seeds no ambiente isolado:
 
 ```bash
 NODE_ENV=test npm run migration:run --workspace=backend
@@ -402,15 +305,20 @@ NODE_ENV=test npm run seed:exams --workspace=backend
 NODE_ENV=test npm run seed:doctors --workspace=backend
 ```
 
-O ambiente de testes possui proteção para impedir que a aplicação utilize o banco de desenvolvimento quando `NODE_ENV=test`.
+Os testes com escrita usam o banco `medical_scheduling_test` e possuem verificações para recusar conexões com o banco de desenvolvimento. As suítes de agendamento fazem limpeza direcionada dos registros que criam.
 
-### Executar os testes E2E
+### 2. Testes unitários e de componentes
+
+```bash
+npm run test --workspace=backend -- --run
+npm run test --workspace=frontend
+```
+
+### 3. Testes E2E da API
 
 ```bash
 npm run test:e2e --workspace=backend -- --run
 ```
-
-O script `test:e2e` configura `NODE_ENV=test` e utiliza o PostgreSQL isolado. Testes que criam agendamentos fazem a limpeza dos registros identificados por cada execução, sem excluir os dados de referência.
 
 Para executar somente os testes de concorrência:
 
@@ -420,23 +328,40 @@ NODE_ENV=test npm exec --workspace=backend -- vitest run \
   test/appointments-concurrency.e2e-spec.ts
 ```
 
-Os testes de concorrência verificam:
+Entre os cenários cobertos estão: requisições concorrentes para o mesmo horário, sobreposições com durações diferentes, horários consecutivos, atendimentos simultâneos por médicos diferentes e a restrição `23P01` do PostgreSQL.
 
-- Múltiplas requisições tentando reservar o mesmo horário;
-- Sobreposição entre exames com durações diferentes;
-- Agendamentos consecutivos sem conflito;
-- Médicos diferentes atendendo no mesmo horário;
-- Rejeição direta de sobreposição pelo PostgreSQL com SQLSTATE `23P01`.
+### 4. Testes E2E no navegador
 
-### Validação completa do backend
+Instale o navegador de testes (na primeira execução do ambiente):
 
 ```bash
-npm run test --workspace=backend -- --run
-npm run test:e2e --workspace=backend -- --run
-npm run build --workspace=backend
+npm exec --workspace=frontend -- playwright install chromium
 ```
 
-## Comandos úteis do Docker Compose
+Execute:
+
+```bash
+npm run test:browser --workspace=frontend
+```
+
+Para acompanhar o navegador visualmente:
+
+```bash
+npm run test:browser --workspace=frontend -- --headed
+```
+
+O Playwright inicia automaticamente a API de testes na **porta 3100** e o frontend na **porta 5174**, utilizando o PostgreSQL isolado na porta **5434**. A configuração não reaproveita servidores previamente iniciados nessas portas.
+
+Os cenários cobrem seleção de exame, médico, data e horário; revisão; confirmação e persistência; atualização da disponibilidade; e tratamento real de `409 Conflict`. Os agendamentos criados são identificados individualmente e removidos após cada cenário, quando a execução conclui normalmente.
+
+### 5. Build e lint
+
+```bash
+npm run build
+npm run lint --workspace=frontend
+```
+
+## Comandos úteis
 
 Verificar os containers:
 
@@ -444,18 +369,22 @@ Verificar os containers:
 docker compose --profile test ps
 ```
 
-Encerrar os serviços de desenvolvimento:
+Encerrar os serviços:
 
 ```bash
 docker compose down
 ```
 
-O comando `docker compose down`, sem `-v`, **preserva os volumes nomeados** do PostgreSQL. Evite `docker compose down -v` se desejar manter os dados locais.
+`docker compose down`, sem a opção `-v`, **preserva os volumes nomeados** do PostgreSQL. Evite `docker compose down -v` se desejar conservar os dados locais.
 
-## Arquivos originais do desafio
+## Notas sobre escopo e produção
 
-Os arquivos fornecidos para o desafio estão preservados em `challenge/`, incluindo o catálogo de exames (`challenge/dados/exames.csv`) e a definição dos médicos e respectivos turnos (`challenge/dados/medicos.md`).
+O projeto foi desenvolvido para o escopo do desafio técnico. Os endpoints de consulta e criação de agendamentos são públicos, **sem autenticação ou autorização de usuários**. A interface utiliza pt-BR; erros HTTP conhecidos são traduzidos em mensagens amigáveis, sem exibir textos técnicos da API diretamente ao paciente.
+
+Para uso com pacientes reais, seriam necessárias avaliações e medidas adicionais de segurança, privacidade e operação, incluindo controles adequados de identidade, tratamento de dados pessoais, observabilidade e infraestrutura. A **idempotência das requisições de criação** ainda não foi implementada e permanece como possível evolução.
+
+Os materiais originais do desafio foram preservados em `challenge/`.
 
 ---
 
-**Projeto desenvolvido como parte do desafio técnico da A3Data.**
+Projeto desenvolvido como parte do desafio técnico da **A3Data**.
