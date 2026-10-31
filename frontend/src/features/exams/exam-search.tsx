@@ -73,10 +73,7 @@ export function ExamSearch({
           className="min-h-12 w-full rounded-xl border
           border-line bg-white py-3 pr-4 pl-12
             text-base text-ink placeholder:text-muted-ink
-            transition-colors
-          focus:border-brand focus:outline-none
-            focus:ring-2 focus:ring-brand/15
-            focus-visible:outline-none"
+            transition-colors"
         />
       </div>
 

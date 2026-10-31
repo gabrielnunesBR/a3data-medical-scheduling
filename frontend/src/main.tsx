@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query';
 
 import App from './App';
+import 'react-day-picker/style.css';
 import './index.css';
 
 const queryClient = new QueryClient({
