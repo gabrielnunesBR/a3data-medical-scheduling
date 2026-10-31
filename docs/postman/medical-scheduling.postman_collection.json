@@ -1,0 +1,430 @@
+{
+  "info": {
+    "_postman_id": "bca9d257-9935-4ddc-af54-57b464b0f2c1",
+    "name": "A3Data — Agendamento de Exames de Imagem",
+    "description": "Coleção de demonstração da API NestJS do desafio A3Data (Postman Collection v2.1), para Postman e Insomnia. Sem credenciais ou dados pessoais reais.\n\nORDEM DE USO:\n1. Inicie a API e o PostgreSQL de desenvolvimento em http://localhost:3000.\n2. Execute health check, exames e médicos.\n3. Consulte a disponibilidade com doctorId, examId e date (YYYY-MM-DD no futuro).\n4. Copie um horário HH:mm retornado e ajuste MANUALMENTE startAt no corpo do POST, usando ISO 8601 com offset -03:00 (ex.: 2030-01-10T08:40:00-03:00). A data e o horário do exemplo não garantem disponibilidade.\n5. Execute o POST apenas quando desejar gravar uma reserva. HTTP 201 indica criação; 409 indica conflito legítimo.\n6. Idempotency-Key é opcional e está DESABILITADO por padrão. Para testar idempotência, habilite o header e use UUID único por operação; repita apenas a mesma operação com a mesma chave.\n\nA coleção não depende de valores gerados por scripts de outras requisições. Todos os testes de resposta permanecem disponíveis.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('A resposta contém X-Request-ID válido', function () {",
+          "  const requestId = pm.response.headers.get('X-Request-ID');",
+          "  pm.expect(requestId, 'X-Request-ID ausente').to.be.a('string');",
+          "  pm.expect(requestId).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "examSearch",
+      "value": "ultrassonografia",
+      "type": "string"
+    },
+    {
+      "key": "examId",
+      "value": "17",
+      "type": "string"
+    },
+    {
+      "key": "doctorId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "date",
+      "value": "2030-01-10",
+      "type": "string"
+    },
+    {
+      "key": "patientName",
+      "value": "Paciente Teste",
+      "type": "string"
+    },
+    {
+      "key": "idempotencyKey",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 — Saúde",
+      "item": [
+        {
+          "name": "Verificar API e PostgreSQL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Readiness check. HTTP 200 com {\"status\":\"ok\"} quando a consulta SELECT 1 ao PostgreSQL funciona; HTTP 503 se a dependência estiver indisponível."
+          },
+          "response": [
+            {
+              "name": "200 — API e banco disponíveis",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/health",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "health"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ok\"\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /api/health retorna 200 quando o banco está pronto', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Health check retorna status ok', function () {",
+                  "    pm.expect(pm.response.json()).to.deep.equal({ status: 'ok' });",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 — Exames",
+      "item": [
+        {
+          "name": "Listar todos os exames",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams"
+              ]
+            },
+            "description": "Lista o catálogo completo, ordenado por nome. A resposta inclui id, name e durationMinutes."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /api/exams retorna 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const exams = pm.response.json();",
+                  "  pm.test('Resposta contém uma lista de exames', function () {",
+                  "    pm.expect(exams).to.be.an('array');",
+                  "    exams.forEach(function (exam) {",
+                  "      pm.expect(exam.id).to.be.a('number');",
+                  "      pm.expect(exam.name).to.be.a('string');",
+                  "      pm.expect(exam.durationMinutes).to.be.a('number');",
+                  "    });",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar exames pelo nome",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/exams?search={{examSearch}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "exams"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "{{examSearch}}",
+                  "description": "Texto opcional; até 100 caracteres"
+                }
+              ]
+            },
+            "description": "Pesquisa por nome (correspondência parcial, sem diferenciação de maiúsculas/minúsculas). Edite a variável examSearch."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Busca de exames retorna 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const exams = pm.response.json();",
+                  "  const searchValue = pm.variables.get('examSearch');",
+                  "  pm.test('Variável examSearch está configurada', function () {",
+                  "    pm.expect(searchValue).to.be.a('string');",
+                  "    pm.expect(searchValue.trim()).not.to.equal('');",
+                  "  });",
+                  "  if (typeof searchValue === 'string' && searchValue.trim()) {",
+                  "    const term = searchValue.toLowerCase().trim();",
+                  "    pm.test('Exames encontrados correspondem ao texto buscado', function () {",
+                  "      pm.expect(exams).to.be.an('array');",
+                  "      exams.forEach(function (exam) {",
+                  "        pm.expect(exam.name.toLowerCase()).to.include(term);",
+                  "      });",
+                  "    });",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 — Médicos",
+      "item": [
+        {
+          "name": "Listar médicos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctors"
+              ]
+            },
+            "description": "Lista profissionais disponíveis para agendamento; cada item contém id, name e crm."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('GET /api/doctors retorna 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const doctors = pm.response.json();",
+                  "  pm.test('Médicos apresentam id, nome e CRM', function () {",
+                  "    pm.expect(doctors).to.be.an('array');",
+                  "    doctors.forEach(function (doctor) {",
+                  "      pm.expect(doctor.id).to.be.a('number');",
+                  "      pm.expect(doctor.name).to.be.a('string');",
+                  "      pm.expect(doctor.crm).to.be.a('string');",
+                  "    });",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 — Disponibilidade",
+      "item": [
+        {
+          "name": "Consultar horários disponíveis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/doctors/{{doctorId}}/availability?examId={{examId}}&date={{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "doctors",
+                "{{doctorId}}",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "examId",
+                  "value": "{{examId}}",
+                  "description": "ID positivo do exame"
+                },
+                {
+                  "key": "date",
+                  "value": "{{date}}",
+                  "description": "Data local YYYY-MM-DD"
+                }
+              ]
+            },
+            "description": "Consulta disponibilidade para o exame, médico e data informados. Retorna horários no formato HH:mm. Para agendar, copie manualmente uma data e um horário desta resposta para o campo startAt do POST, usando ISO 8601 com offset -03:00 (ex.: 2030-01-10T08:40:00-03:00). A disponibilidade é dinâmica e a reserva pode retornar 409 se houver conflito."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Consulta de disponibilidade retorna 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const slots = pm.response.json();",
+                  "  pm.test('Horários seguem o formato HH:mm', function () {",
+                  "    pm.expect(slots).to.be.an('array');",
+                  "    slots.forEach(function (time) {",
+                  "      pm.expect(time).to.match(/^([01]\\d|2[0-3]):[0-5]\\d$/);",
+                  "    });",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 — Agendamentos",
+      "item": [
+        {
+          "name": "Criar agendamento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}",
+                "description": "Opcional. DESABILITADO por padrão; ao habilitar, configure um UUID novo por agendamento diferente.",
+                "type": "text",
+                "disabled": true
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "appointments"
+              ]
+            },
+            "description": "AÇÃO DE ESCRITA: cria uma reserva no banco de desenvolvimento. Antes de enviar, consulte a disponibilidade e substitua o valor literal de startAt por um horário HH:mm retornado, no formato YYYY-MM-DDTHH:mm:00-03:00. O horário inicial é APENAS exemplo e pode estar ocupado. HTTP 201 indica criação; 409 indica conflito. O header Idempotency-Key é opcional e fica desabilitado por padrão; se ativá-lo, gere uma chave nova para operações distintas. Não depende de variável criada por scripts de outras requisições.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientName\": \"{{patientName}}\",\n  \"examId\": {{examId}},\n  \"doctorId\": {{doctorId}},\n  \"startAt\": \"2030-01-10T08:00:00-03:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('POST retorna 201 ou conflito de reserva 409', function () {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});",
+                  "if (pm.response.code === 201) {",
+                  "  const appointment = pm.response.json();",
+                  "  pm.test('Reserva criada retorna os principais campos', function () {",
+                  "    pm.expect(appointment.id).to.be.a('number');",
+                  "    pm.expect(appointment.patientName).to.be.a('string');",
+                  "    pm.expect(appointment.examId).to.be.a('number');",
+                  "    pm.expect(appointment.doctorId).to.be.a('number');",
+                  "    pm.expect(appointment.startAt).to.be.a('string');",
+                  "    pm.expect(appointment.endAt).to.be.a('string');",
+                  "    pm.expect(appointment.createdAt).to.be.a('string');",
+                  "  });",
+                  "}",
+                  "if (pm.response.code === 409) {",
+                  "  const error = pm.response.json();",
+                  "  pm.test('Conflito possui status e mensagem', function () {",
+                  "    pm.expect(error.statusCode).to.equal(409);",
+                  "    pm.expect(error.message).to.exist;",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
