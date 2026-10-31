@@ -55,7 +55,7 @@ jobs:
   integration:
     name: PostgreSQL integration tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -118,3 +118,26 @@ jobs:
         run: npm run test:e2e --workspace=backend -- --run
         env:
           NODE_ENV: test
+
+      - name: Install Playwright Chromium
+        run: |
+          npm exec --workspace=frontend -- \
+            playwright install --with-deps chromium
+
+      - name: Run Playwright E2E tests
+        run: |
+          npm run test:browser --workspace=frontend -- \
+            --reporter=github,html
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
+
+      - name: Upload Playwright failure reports
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-failure-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
