@@ -92,3 +92,8 @@ body {
 #patient-name[aria-invalid='true']:focus {
   border-color: var(--color-danger);
 }
+
+button:not(:disabled),
+a[href] {
+  cursor: pointer;
+}
