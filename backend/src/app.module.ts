@@ -10,9 +10,13 @@ import { AvailabilityModule } from './modules/availability/availability.module.j
 
 @Module({
   imports: [
+
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: ['../.env', '.env'],
+      envFilePath:
+        process.env.NODE_ENV === 'test'
+          ? '../.env.test'
+          : ['../.env', '.env'],
       validationSchema: envSchema,
     }),
 

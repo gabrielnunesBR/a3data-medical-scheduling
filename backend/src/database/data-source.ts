@@ -13,8 +13,14 @@ import { DoctorShift } from '../modules/doctors/entities/doctor-shift.entity.js'
 import { InitialSchema1793400000000 } from './migrations/1793400000000-InitialSchema.js';
 import { UniqueDoctorShifts1793400001000 } from './migrations/1793400001000-UniqueDoctorShifts.js';
 
+
 loadEnv({
-  path: resolve(process.cwd(), '../.env'),
+  path: resolve(
+    process.cwd(),
+    process.env.NODE_ENV === 'test'
+      ? '../.env.test'
+      : '../.env',
+  ),
 });
 
 const env = envSchema.parse(process.env);

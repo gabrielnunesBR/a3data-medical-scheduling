@@ -228,3 +228,41 @@ Começaremos isolando os testes de integração em um banco próprio. Depois imp
 A prioridade será garantir que dois pacientes não consigam reservar intervalos sobrepostos para o mesmo médico, mesmo com requisições simultâneas.
 
 Por enquanto, implemente apenas a Task 5. Quando você confirmar que os testes e as requisições HTTP passaram, avançaremos.
+
+
+## Banco de testes
+
+Os testes E2E utilizam uma instância PostgreSQL
+isolada do ambiente de desenvolvimento.
+
+### Configuração
+
+Na raiz do repositório:
+
+    cp .env.test.example .env.test
+
+Configure POSTGRES_PASSWORD com a mesma senha
+utilizada no .env local.
+
+### Inicializar PostgreSQL de testes
+
+    docker compose --profile test up -d db_test
+
+### Preparar o schema
+
+    NODE_ENV=test npm run migration:run --workspace=backend
+
+### Importar dados de referência
+
+    NODE_ENV=test npm run seed:exams --workspace=backend
+    NODE_ENV=test npm run seed:doctors --workspace=backend
+
+### Executar testes E2E
+
+    npm run test:e2e --workspace=backend
+
+O banco de testes utiliza a porta 5434 e o nome
+medical_scheduling_test.
+
+Nenhum teste E2E deve modificar os registros do
+banco de desenvolvimento.

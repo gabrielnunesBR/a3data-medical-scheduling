@@ -12,4 +12,15 @@ export const envSchema = z.object({
   POSTGRES_USER: z.string().trim().min(1),
 
   POSTGRES_PASSWORD: z.string().min(1),
+}).superRefine((env, ctx) => {
+  if (
+    env.NODE_ENV === 'test' &&
+    !env.POSTGRES_DB.endsWith('_test')
+  ) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['POSTGRES_DB'],
+      message: 'Test environment requires a test database.',
+    });
+  }
 });

@@ -52,4 +52,17 @@ describe('Environment configuration', () => {
     expect(result.POSTGRES_PORT).toBe(5433);
     expect(result.NODE_ENV).toBe('development');
   });
+
+  it('should reject a development database in test environment', () => {
+    const result = envSchema.safeParse({
+      POSTGRES_HOST: '127.0.0.1',
+      POSTGRES_PORT: '5433',
+      POSTGRES_DB: 'medical_scheduling',
+      POSTGRES_USER: 'medical_app',
+      POSTGRES_PASSWORD: 'test-password',
+      NODE_ENV: 'test',
+    });
+
+    expect(result.success).toBe(false);
+  });
 });
