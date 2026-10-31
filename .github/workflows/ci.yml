@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   quality:
-    name: Install and build
+    name: Quality and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -26,6 +26,28 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Check code formatting
+        run: |
+          npx --no-install prettier --check \
+            "backend/src/**/*.ts" \
+            "backend/test/**/*.ts" \
+            "frontend/src/**/*.{ts,tsx}" \
+            "frontend/e2e/**/*.ts"
+
+      - name: Lint frontend
+        run: npm run lint --workspace=frontend
+
+      - name: Type-check frontend tooling
+        run: |
+          npm exec --workspace=frontend -- \
+            tsc -p tsconfig.node.json --noEmit
+
+      - name: Test backend
+        run: npm run test --workspace=backend -- --run
+
+      - name: Test frontend
+        run: npm run test --workspace=frontend
 
       - name: Build backend and frontend
         run: npm run build
