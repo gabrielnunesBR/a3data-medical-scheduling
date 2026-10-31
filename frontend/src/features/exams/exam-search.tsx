@@ -51,6 +51,7 @@ export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
         <input
           id="exam-search"
           type="search"
+          maxLength={100}
           value={inputValue}
           onChange={(event) => setInputValue(event.target.value)}
           placeholder="Ex.: ressonância magnética"

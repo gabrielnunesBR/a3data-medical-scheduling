@@ -2,7 +2,7 @@
 
 **Projeto:** desafio técnico A3Data  
 **Data da pesquisa:** 30 de outubro de 2026  
-**Status:** decisões iniciais para implementação; validar empiricamente com testes de usabilidade e acessibilidade.
+**Status:** registro das decisões de UX/UI adotadas no projeto. Os testes automatizados de acessibilidade fazem parte da implementação; permanece recomendada uma avaliação manual de usabilidade e acessibilidade.
 
 ## Objetivo
 
@@ -76,19 +76,21 @@ Contrastes calculados: branco/brand = 5,47:1; branco/brand-strong = 7,58:1; ink/
 
 Nome do paciente associado a tipo de exame exige cautela por envolver informação de saúde. Não persistir nome do paciente em `localStorage` ou URL; evitar logs contendo payloads, analytics invasivo e terceiros desnecessários. Não apresentar selo de conformidade LGPD: implantação real exige análise de controles de segurança, base legal, retenção e demais obrigações.
 
-## Stack e plano incremental
+## Stack implementada e plano original
+
+As tecnologias abaixo estão presentes na implementação. A sequência de etapas ao final desta seção registra o planejamento original e não representa uma lista de tarefas pendentes.
 
 - **React + Vite + TypeScript:** já presentes no monorepo.
 - **Tailwind CSS v4 + tokens semânticos:** estilo.
 - **Fontsource Inter Variable:** tipografia auto-hospedada.
 - **Lucide React:** ícones pontuais.
-- **TanStack Query:** chamadas HTTP e cache por parâmetros (adicionar ao implementar consultas).
-- **React DayPicker:** calendário acessível/localizado (adicionar na etapa de datas).
-- **React Hook Form + Zod:** formulário de confirmação (adicionar ao implementar reserva).
-- **Vitest + Testing Library + MSW:** testes de interface e comportamento; avaliar Playwright para E2E navegador.
+- **TanStack Query:** chamadas HTTP e cache por parâmetros.
+- **React DayPicker:** calendário localizado para seleção de datas.
+- **React Hook Form + Zod:** formulário e validação da confirmação do agendamento.
+- **Vitest + Testing Library + MSW:** testes de interface e comportamento; **Playwright:** testes E2E no navegador.
 - **Vite proxy `/api` → backend:** desenvolvimento; produção exigirá configuração equivalente de proxy/reverse proxy.
 
-### Entregas
+### Etapas previstas no planejamento inicial
 
 1. Fundação visual, estilos, estrutura responsiva e proxy.
 2. Busca de exames integrada à API, com estados de carregamento e erro.
@@ -99,7 +101,7 @@ Nome do paciente associado a tipo de exame exige cautela por envolver informaç�
 ## Referências consultadas
 
 - [Rede D'Or — campanha de agendamento de exames](https://www.rededorsaoluiz.com.br/campanha-agendamento-exame)
-- [Fleury — agendamento digital](https://master.dhxwu3czdqsjd.amplifyapp.com/)
+- [Fleury — agendamento digital](https://agendamento.fleury.com.br/)
 - [Doctoralia — agendamentos](https://www.doctoralia.com.br/)
 - [NHS Service Manual — Design System](https://service-manual.nhs.uk/design-system)
 - [NHS — Acessibilidade](https://service-manual.nhs.uk/accessibility/design)
