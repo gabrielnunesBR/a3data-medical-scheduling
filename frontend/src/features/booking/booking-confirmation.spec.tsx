@@ -399,7 +399,7 @@ describe('Booking confirmation', () => {
     expect(
       await screen.findByRole('alert'),
     ).toHaveTextContent(
-      'Não foi possível verificar se o agendamento foi concluído.',
+      'Não foi possível confirmar o resultado do agendamento.',
     );
 
     expect(
@@ -439,7 +439,7 @@ describe('Booking confirmation', () => {
     expect(
       await screen.findByRole('alert'),
     ).toHaveTextContent(
-      'Não foi possível verificar se o agendamento foi concluído.',
+      'Não foi possível confirmar o resultado do agendamento.',
     );
 
     expect(requests).toBe(1);
@@ -479,5 +479,69 @@ describe('Booking confirmation', () => {
     expect(
       screen.queryByText('Too Many Requests'),
     ).not.toBeInTheDocument();
+  });
+
+  it('reuses the same idempotency key when retrying identical data', async () => {
+    const keys: string[] = [];
+
+    server.use(
+      http.post('*/api/appointments', ({ request }) => {
+        keys.push(
+          request.headers.get('Idempotency-Key') ?? '',
+        );
+
+        return HttpResponse.json(
+          { message: 'Internal Server Error' },
+          { status: 500 },
+        );
+      }),
+    );
+
+    const user = await goToConfirmation();
+
+    const patientInput = screen.getByRole('textbox', {
+      name: 'Nome completo do paciente',
+    });
+
+    const submitButton = screen.getByRole('button', {
+      name: 'Confirmar agendamento',
+    });
+
+    await user.type(patientInput, 'Maria Oliveira');
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(keys).toHaveLength(1);
+    });
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent(
+      'Você pode tentar novamente',
+    );
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(keys).toHaveLength(2);
+    });
+
+    expect(keys[0]).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+
+    expect(keys[1]).toBe(keys[0]);
+
+    await user.clear(patientInput);
+    await user.type(patientInput, 'João Oliveira');
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(keys).toHaveLength(3);
+    });
+
+    expect(keys[2]).not.toBe(keys[0]);
   });
 });

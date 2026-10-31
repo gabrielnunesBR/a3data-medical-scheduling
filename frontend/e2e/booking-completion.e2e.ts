@@ -368,3 +368,103 @@ test('handles a real HTTP 409 and refreshes available slots', async ({
     { patient_name: firstPatient },
   ]);
 });
+
+test('recovers a lost response without duplicating the appointment', async ({
+  page,
+  request,
+}) => {
+  const fixture = await getBookingFixture(request);
+  const patientName = newTestPatient();
+
+  const submittedKeys: string[] = [];
+
+  page.on('request', (req) => {
+    const pathname = new URL(req.url()).pathname;
+
+    if (
+      req.method() === 'POST' &&
+      pathname === '/api/appointments'
+    ) {
+      submittedKeys.push(
+        req.headers()['idempotency-key'] ?? '',
+      );
+    }
+  });
+
+  await goToConfirmation(page, fixture);
+
+  // A API processa normalmente a primeira requisição,
+  // mas a resposta não chega ao navegador.
+  await page.route(
+    '**/api/appointments',
+    async (route) => {
+      const response = await route.fetch();
+
+      if (response.status() !== 201) {
+        throw new Error(
+          `Expected HTTP 201, got ${response.status()}.`,
+        );
+      }
+
+      await route.abort('failed');
+    },
+    { times: 1 },
+  );
+
+  await page
+    .getByRole('textbox', {
+      name: 'Nome completo do paciente',
+    })
+    .fill(patientName);
+
+  const submitButton = page.getByRole('button', {
+    name: 'Confirmar agendamento',
+  });
+
+  await submitButton.click();
+
+  await expect(
+    page.getByRole('alert'),
+  ).toContainText(
+    'Não foi possível confirmar o resultado',
+  );
+
+  // A gravação aconteceu apesar da resposta perdida.
+  const firstResult = await database.query<{
+    id: number;
+  }>(
+    `SELECT id
+     FROM appointments
+     WHERE patient_name = $1`,
+    [patientName],
+  );
+
+  expect(firstResult.rows).toHaveLength(1);
+
+  const originalId = firstResult.rows[0].id;
+
+  // Segunda tentativa: deve retornar o registro original.
+  await submitButton.click();
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Agendamento confirmado!',
+    }),
+  ).toBeVisible();
+
+  const finalResult = await database.query<{
+    id: number;
+  }>(
+    `SELECT id
+     FROM appointments
+     WHERE patient_name = $1`,
+    [patientName],
+  );
+
+  expect(finalResult.rows).toHaveLength(1);
+  expect(finalResult.rows[0].id).toBe(originalId);
+
+  expect(submittedKeys).toHaveLength(2);
+  expect(submittedKeys[0]).toBeTruthy();
+  expect(submittedKeys[1]).toBe(submittedKeys[0]);
+});

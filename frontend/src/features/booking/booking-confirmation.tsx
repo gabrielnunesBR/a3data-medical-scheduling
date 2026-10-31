@@ -1,15 +1,22 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRef } from 'react';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, ClipboardCheck } from 'lucide-react';
+import {
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { ChevronLeft } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import type { Exam } from '../exams/exams.api';
+
 import type { Doctor } from './availability.api';
 import {
   AppointmentRequestError,
   createAppointment,
   type Appointment,
+  type CreateAppointmentInput,
 } from './appointments.api';
 import {
   formatClinicDate,
@@ -20,11 +27,11 @@ const patientSchema = z.object({
   patientName: z
     .string()
     .trim()
-    .min(1, 'Informe o nome do paciente.')
+    .min(2, 'Informe o nome do paciente.')
     .max(160, 'O nome deve ter no máximo 160 caracteres.'),
 });
 
-type PatientForm = z.infer<typeof patientSchema>;
+type PatientFormValues = z.infer<typeof patientSchema>;
 
 type BookingConfirmationProps = {
   exam: Exam;
@@ -36,27 +43,42 @@ type BookingConfirmationProps = {
   onConflict: () => void;
 };
 
-function getErrorMessage(error: Error): string {
+type AppointmentSubmission = {
+  input: CreateAppointmentInput;
+  idempotencyKey: string;
+};
+
+function getErrorMessage(error: unknown): string {
   if (error instanceof AppointmentRequestError) {
+    if (
+      error.status === 409 &&
+      error.code === 'IDEMPOTENCY_KEY_REUSED'
+    ) {
+      return 'Esta confirmação não pode ser reutilizada com dados diferentes. Volte e revise o agendamento.';
+    }
+
     switch (error.status) {
       case 400:
-        return 'Verifique os dados informados e tente novamente.';
+        return 'Os dados informados são inválidos. Confira as informações e tente novamente.';
 
       case 404:
-        return 'Não foi possível encontrar o exame ou profissional selecionado.';
+        return 'Não foi possível localizar o exame ou o profissional selecionado. Volte e revise o agendamento.';
+
+      case 409:
+        return 'Esse horário acabou de ser reservado. Escolha outro horário disponível.';
 
       case 422:
-        return 'Esse horário não pode mais ser agendado. Volte e escolha outro.';
+        return 'Esse horário não pode mais ser agendado. Volte e escolha outro horário.';
 
       case 429:
         return 'Muitas tentativas de agendamento em pouco tempo. Aguarde alguns instantes antes de tentar novamente.';
 
       default:
-        return 'Não foi possível verificar se o agendamento foi concluído. Evite repetir o envio imediatamente.';
+        return 'Não foi possível confirmar o resultado do agendamento. Você pode tentar novamente sem criar uma reserva duplicada.';
     }
   }
 
-  return 'Não foi possível verificar se o agendamento foi concluído. Confira sua conexão antes de tentar novamente.';
+  return 'Não foi possível confirmar o resultado do agendamento. Você pode tentar novamente sem criar uma reserva duplicada.';
 }
 
 export function BookingConfirmation({
@@ -70,24 +92,41 @@ export function BookingConfirmation({
 }: BookingConfirmationProps) {
   const queryClient = useQueryClient();
 
+  const idempotencyKeysRef = useRef(
+    new Map<string, string>(),
+  );
+
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<PatientForm>({
+  } = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
     defaultValues: {
       patientName: '',
     },
   });
 
-  const mutation = useMutation({
-    mutationFn: createAppointment,
+  const mutation = useMutation<
+    Appointment,
+    Error,
+    AppointmentSubmission
+  >({
+    mutationFn: ({ input, idempotencyKey }) =>
+      createAppointment(input, idempotencyKey),
+
+    retry: false,
 
     onSuccess: async (appointment) => {
+      idempotencyKeysRef.current.clear();
+
       await queryClient.invalidateQueries({
-        queryKey: ['availability', doctor.id, exam.id, date],
-        refetchType: 'none',
+        queryKey: [
+          'availability',
+          doctor.id,
+          exam.id,
+          date,
+        ],
       });
 
       onBooked(appointment);
@@ -96,11 +135,16 @@ export function BookingConfirmation({
     onError: async (error) => {
       if (
         error instanceof AppointmentRequestError &&
-        error.status === 409
+        error.status === 409 &&
+        error.code !== 'IDEMPOTENCY_KEY_REUSED'
       ) {
         await queryClient.invalidateQueries({
-          queryKey: ['availability', doctor.id, exam.id, date],
-          refetchType: 'none',
+          queryKey: [
+            'availability',
+            doctor.id,
+            exam.id,
+            date,
+          ],
         });
 
         onConflict();
@@ -108,63 +152,72 @@ export function BookingConfirmation({
     },
   });
 
-  const submit = handleSubmit((values) => {
-    mutation.mutate({
-      patientName: values.patientName,
+  function onSubmit(values: PatientFormValues) {
+    if (mutation.isPending) {
+      return;
+    }
+
+    const input: CreateAppointmentInput = {
+      patientName: values.patientName.trim(),
       examId: exam.id,
       doctorId: doctor.id,
       startAt: toAppointmentStartAt(date, time),
+    };
+
+    const signature = JSON.stringify({
+      patientName: input.patientName,
+      examId: input.examId,
+      doctorId: input.doctorId,
+      startAt: input.startAt,
     });
-  });
+
+    let idempotencyKey =
+      idempotencyKeysRef.current.get(signature);
+
+    if (!idempotencyKey) {
+      idempotencyKey = crypto.randomUUID();
+
+      idempotencyKeysRef.current.set(
+        signature,
+        idempotencyKey,
+      );
+    }
+
+    mutation.mutate({
+      input,
+      idempotencyKey,
+    });
+  }
 
   return (
     <div>
       <button
         type="button"
-        disabled={mutation.isPending}
         onClick={onBack}
-        className="mb-6 inline-flex min-h-11 items-center
-          gap-2 text-sm font-semibold text-brand-strong
-          hover:underline disabled:opacity-50"
+        disabled={mutation.isPending}
+        className="mb-6 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-brand-strong hover:underline disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <ArrowLeft size={18} aria-hidden="true" />
+        <ChevronLeft size={18} aria-hidden="true" />
         Voltar para horários
       </button>
 
-      <div className="flex items-start gap-3">
-        <div
-          className="flex size-11 shrink-0 items-center
-            justify-center rounded-xl bg-brand-subtle
-            text-brand-strong"
+      <div>
+        <h2
+          id="booking-step-heading"
+          tabIndex={-1}
+          className="text-xl font-semibold tracking-tight text-ink sm:text-2xl"
         >
-          <ClipboardCheck size={22} aria-hidden="true" />
-        </div>
+          Revise e confirme seu agendamento
+        </h2>
 
-        <div>
-          <h2
-            id="booking-step-heading"
-            tabIndex={-1}
-            className="text-xl font-semibold tracking-tight
-              sm:text-2xl focus-visible:rounded-sm
-              focus-visible:outline-2
-              focus-visible:outline-offset-4
-              focus-visible:outline-brand"
-          >
-            Revise e confirme seu agendamento
-          </h2>
-
-          <p className="mt-2 text-sm leading-6 text-muted-ink">
-            Confira as informações e informe o nome
-            do paciente para concluir.
-          </p>
-        </div>
+        <p className="mt-3 text-sm leading-6 text-muted-ink">
+          Confira as informações selecionadas e informe
+          o nome completo do paciente para finalizar.
+        </p>
       </div>
 
-      <div
-        className="mt-7 rounded-xl border border-line
-          bg-canvas p-5"
-      >
-        <h3 className="font-semibold text-ink">
+      <div className="mt-8 rounded-xl border border-line bg-canvas p-5 sm:p-6">
+        <h3 className="text-base font-semibold text-ink">
           Resumo do atendimento
         </h3>
 
@@ -176,10 +229,10 @@ export function BookingConfirmation({
 
             <dd className="mt-1 font-medium text-ink">
               {exam.name}
-            </dd>
 
-            <dd className="text-sm text-muted-ink">
-              Duração: {exam.durationMinutes} minutos
+              <span className="mt-1 block text-sm font-normal text-muted-ink">
+                Duração: {exam.durationMinutes} minutos
+              </span>
             </dd>
           </div>
 
@@ -203,105 +256,99 @@ export function BookingConfirmation({
             </dd>
           </div>
 
-          <div className="pt-3">
+          <div className="py-3">
             <dt className="text-sm text-muted-ink">
               Horário
             </dt>
 
             <dd className="mt-1 font-semibold text-brand-strong">
-              {time} — horário de Brasília
+              {time}
             </dd>
           </div>
         </dl>
+
+        <p className="mt-4 text-xs leading-5 text-muted-ink">
+          Os horários são apresentados no horário de
+          Brasília.
+        </p>
       </div>
 
       <form
         noValidate
-        aria-busy={mutation.isPending}
-        onSubmit={(event) => void submit(event)}
+        onSubmit={(event) => {
+          void handleSubmit(onSubmit)(event);
+        }}
         className="mt-8"
       >
-        <label
-          htmlFor="patient-name"
-          className="block text-sm font-semibold text-ink"
-        >
-          Nome completo do paciente
-        </label>
+        <div>
+          <label
+            htmlFor="patient-name"
+            className="block text-sm font-semibold text-ink"
+          >
+            Nome completo do paciente
+          </label>
 
-        <input
-          id="patient-name"
-          type="text"
-          autoComplete="name"
-          placeholder="Digite o nome completo"
-          maxLength={160}
-          aria-invalid={Boolean(errors.patientName)}
-          aria-describedby={
-            errors.patientName
-              ? 'patient-name-error'
-              : 'patient-name-help'
-          }
-          {...register('patientName')}
-          className="mt-2 min-h-12 w-full rounded-xl
-            border border-line bg-white px-4
-            text-base text-ink transition-colors
-            aria-invalid:border-danger"
-        />
+          <input
+            id="patient-name"
+            type="text"
+            autoComplete="name"
+            maxLength={160}
+            placeholder="Digite o nome completo"
+            disabled={mutation.isPending}
+            aria-invalid={Boolean(errors.patientName)}
+            aria-describedby={
+              errors.patientName
+                ? 'patient-name-error'
+                : undefined
+            }
+            className="mt-3 min-h-12 w-full rounded-xl border border-line bg-surface px-4 text-sm text-ink placeholder:text-muted-ink disabled:cursor-not-allowed disabled:opacity-60"
+            {...register('patientName', {
+              onChange: () => {
+                mutation.reset();
+              },
+            })}
+          />
 
-        {errors.patientName ? (
-          <p
-            id="patient-name-error"
+          {errors.patientName && (
+            <p
+              id="patient-name-error"
+              role="alert"
+              className="mt-2 text-sm text-red-700"
+            >
+              {errors.patientName.message}
+            </p>
+          )}
+        </div>
+
+        {mutation.isError && (
+          <div
             role="alert"
-            className="mt-2 text-sm text-danger"
+            className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800"
           >
-            {errors.patientName.message}
-          </p>
-        ) : (
-          <p
-            id="patient-name-help"
-            className="mt-2 text-sm text-muted-ink"
-          >
-            Informe o nome como deseja que apareça
-            na confirmação do agendamento.
-          </p>
+            {getErrorMessage(mutation.error)}
+          </div>
         )}
 
-        {mutation.isError &&
-          !(
-            mutation.error instanceof AppointmentRequestError &&
-            mutation.error.status === 409
-          ) && (
-            <div
-              role="alert"
-              className="mt-6 rounded-xl border
-                border-red-200 bg-red-50
-                p-4 text-sm text-danger"
-            >
-              {getErrorMessage(mutation.error)}
-            </div>
-          )}
+        <div className="mt-8 flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={mutation.isPending}
+            className="min-h-12 rounded-xl border border-line px-6 text-sm font-semibold text-ink hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Voltar
+          </button>
 
-        <button
-          type="submit"
-          disabled={mutation.isPending}
-          className="mt-7 flex min-h-12 w-full
-            items-center justify-center rounded-xl
-            bg-brand px-6 font-semibold text-white
-            transition-colors hover:bg-brand-strong
-            disabled:cursor-not-allowed
-            disabled:opacity-60"
-        >
-          {mutation.isPending
-            ? 'Confirmando agendamento...'
-            : 'Confirmar agendamento'}
-        </button>
-
-        <p
-          className="mt-3 text-center text-xs
-            leading-5 text-muted-ink"
-        >
-          A confirmação depende da disponibilidade
-          do horário no momento do envio.
-        </p>
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            className="min-h-12 rounded-xl bg-brand px-6 text-sm font-semibold text-white hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {mutation.isPending
+              ? 'Confirmando agendamento...'
+              : 'Confirmar agendamento'}
+          </button>
+        </div>
       </form>
     </div>
   );
