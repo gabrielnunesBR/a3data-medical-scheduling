@@ -71,6 +71,21 @@ describe('Exam search', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should limit the search query to 100 characters', async () => {
+    const user = userEvent.setup();
+
+    renderApp();
+
+    const searchbox = screen.getByRole('searchbox', {
+      name: /Buscar exame pelo nome/i,
+    });
+
+    await user.type(searchbox, 'a'.repeat(105));
+
+    expect(searchbox).toHaveAttribute('maxLength', '100');
+    expect(searchbox).toHaveValue('a'.repeat(100));
+  });
+
   it('should update the appointment summary', async () => {
     const user = userEvent.setup();
 
