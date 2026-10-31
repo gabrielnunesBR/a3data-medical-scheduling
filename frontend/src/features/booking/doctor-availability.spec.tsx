@@ -7,6 +7,21 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import App from '../../App';
 import { server } from '../../test/server';
 
+const doctors = [
+  {
+    id: 1,
+    name: 'Dra. Helena Marques',
+    crm: 'CRM-MG 11111',
+  },
+  {
+    id: 2,
+    name: 'Dr. Rafael Teixeira',
+    crm: 'CRM-MG 22222',
+  },
+];
+
+const availableSlots = ['08:00', '08:40', '09:20'];
+
 function renderApp() {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -63,24 +78,8 @@ async function goToAvailability() {
 
 beforeEach(() => {
   server.use(
-    http.get('*/api/doctors', () =>
-      HttpResponse.json([
-        {
-          id: 1,
-          name: 'Dra. Helena Marques',
-          crm: 'CRM-MG 11111',
-        },
-        {
-          id: 2,
-          name: 'Dr. Rafael Teixeira',
-          crm: 'CRM-MG 22222',
-        },
-      ]),
-    ),
-
-    http.get('*/api/doctors/:doctorId/availability', () =>
-      HttpResponse.json(['08:00', '08:40', '09:20']),
-    ),
+    http.get('*/api/doctors', () => HttpResponse.json(doctors)),
+    http.get('*/api/doctors/:doctorId/availability', () => HttpResponse.json(availableSlots)),
   );
 });
 
@@ -261,4 +260,138 @@ describe('Doctor availability', () => {
       }),
     ).toHaveFocus();
   });
+
+  it('should show a loading state until availability is returned', async () => {
+    let releaseResponse: () => void = () => {};
+    const responseGate = new Promise<void>((resolve) => {
+      releaseResponse = resolve;
+    });
+
+    server.use(
+      http.get('*/api/doctors/:doctorId/availability', async () => {
+        await responseGate;
+        return HttpResponse.json(availableSlots);
+      }),
+    );
+
+    try {
+      const user = await goToAvailability();
+
+      await user.selectOptions(
+        screen.getByRole('combobox', {
+          name: 'Profissional',
+        }),
+        '1',
+      );
+
+      await user.click(getAvailableCalendarDay());
+
+      expect(await screen.findByText('Consultando disponibilidade...')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Selecionar horário 08:00' }),
+      ).not.toBeInTheDocument();
+
+      releaseResponse();
+
+      expect(
+        await screen.findByRole('button', { name: 'Selecionar horário 08:00' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Consultando disponibilidade...')).not.toBeInTheDocument();
+    } finally {
+      releaseResponse();
+    }
+  });
+
+  it('should recover when loading doctors fails', async () => {
+    let attempts = 0;
+
+    server.use(
+      http.get('*/api/doctors', () => {
+        attempts += 1;
+
+        if (attempts === 1) {
+          return new HttpResponse(null, { status: 500 });
+        }
+
+        return HttpResponse.json(doctors);
+      }),
+    );
+
+    const user = userEvent.setup();
+    renderApp();
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: /Ressonância magnética/i,
+      }),
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Escolher médico e horário',
+      }),
+    );
+
+    expect(
+      await screen.findByText('Não foi possível carregar os profissionais.'),
+    ).toBeInTheDocument();
+
+    const doctorSelect = screen.getByRole('combobox', { name: 'Profissional' });
+    expect(doctorSelect).toBeDisabled();
+
+    await user.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+
+    expect(await screen.findByRole('option', { name: 'Dra. Helena Marques' })).toBeInTheDocument();
+    expect(doctorSelect).toBeEnabled();
+    expect(attempts).toBe(2);
+  });
+
+  it.each(['HTTP 500', 'network error'])(
+    'should show an error and recover availability after %s',
+    async (failure) => {
+      let attempts = 0;
+
+      server.use(
+        http.get('*/api/doctors/:doctorId/availability', () => {
+          attempts += 1;
+
+          if (attempts === 1) {
+            return failure === 'HTTP 500'
+              ? new HttpResponse(null, { status: 500 })
+              : HttpResponse.error();
+          }
+
+          return HttpResponse.json(availableSlots);
+        }),
+      );
+
+      const user = await goToAvailability();
+
+      await user.selectOptions(
+        screen.getByRole('combobox', {
+          name: 'Profissional',
+        }),
+        '1',
+      );
+
+      await user.click(getAvailableCalendarDay());
+
+      expect(
+        await screen.findByText('Não foi possível consultar os horários.'),
+      ).toBeInTheDocument();
+
+      expect(screen.queryByText('Nenhum horário disponível nesta data.')).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: 'Selecionar horário 08:00' }),
+      ).not.toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Tentar novamente' }));
+
+      expect(
+        await screen.findByRole('button', { name: 'Selecionar horário 08:00' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Não foi possível consultar os horários.')).not.toBeInTheDocument();
+      expect(attempts).toBe(2);
+    },
+  );
 });
