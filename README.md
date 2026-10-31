@@ -88,11 +88,16 @@ O fluxo é dividido em seleção de exame, escolha de médico/data/horário, rev
 - Validação de expediente, duração, horários passados e conflitos de reserva.
 - Proteção contra agendamentos simultâneos sobrepostos no PostgreSQL.
 - Fluxo web responsivo em **português brasileiro**, com revisão e confirmação do agendamento.
+- Comprovante na tela de sucesso com opção de imprimir/salvar em PDF pelo navegador e copiar o número da reserva.
 - Limitação de requisições ao endpoint público de criação de agendamentos.
 - Suporte a chaves de idempotência para recuperar reservas já confirmadas sem duplicá-las.
 - Endpoint de saúde da API com verificação de conectividade do PostgreSQL.
 - Documentação interativa Swagger e coleção de requisições Postman/Insomnia.
 - Logs HTTP estruturados e identificação de requisições para diagnóstico.
+
+O comprovante pode ser impresso ou salvo como PDF **após a confirmação**, enquanto a tela de sucesso
+estiver aberta. Não há consulta pública de comprovantes por número do agendamento; a aplicação não oferece
+recuperação após recarregar a página.
 
 ## Estrutura do projeto
 

@@ -80,8 +80,7 @@ function App() {
           </h1>
 
           <p className="mt-4 text-base leading-7 text-muted-ink">
-            Escolha o exame, encontre um horário disponível e confirme seu agendamento em poucos
-            passos.
+            Escolha o exame, encontre um horário disponível e confirme seu agendamento.
           </p>
         </div>
 

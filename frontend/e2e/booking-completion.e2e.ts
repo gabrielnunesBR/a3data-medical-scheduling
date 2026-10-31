@@ -274,6 +274,13 @@ test('creates an appointment and persists it in PostgreSQL', async ({ page, requ
   await expectAccessiblePage(page);
   await expectNoHorizontalOverflowAtWidths(page, 'success');
 
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.getByText('Comprovante de agendamento')).toBeVisible();
+  await expect(page.locator('.booking-receipt')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Imprimir comprovante' })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Copiar número' })).toBeHidden();
+  await page.emulateMedia({ media: 'screen' });
+
   const confirmationText = await page.getByText(/^#\d+$/).innerText();
   const appointmentId = Number(confirmationText.slice(1));
 

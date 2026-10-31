@@ -93,7 +93,73 @@ body {
   border-color: var(--color-danger);
 }
 
+/* Clickable elements use the pointer cursor without changing their focus styles. */
 button:not(:disabled),
 a[href] {
   cursor: pointer;
+}
+
+.booking-receipt-print-heading {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm;
+  }
+
+  body {
+    background: #fff;
+    color: #172b4d;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .booking-receipt,
+  .booking-receipt * {
+    visibility: visible !important;
+  }
+
+  .booking-receipt {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    box-shadow: none !important;
+  }
+
+  .booking-receipt-print-heading {
+    display: block;
+    margin-bottom: 24px;
+  }
+
+  .booking-receipt-print-heading h3 {
+    font-size: 22px;
+    font-weight: 700;
+  }
+
+  .booking-receipt-print-heading p {
+    margin-top: 6px;
+    font-size: 14px;
+  }
+
+  .booking-receipt-copy,
+  .booking-receipt [role='status'] {
+    display: none !important;
+  }
+
+  .booking-receipt dd {
+    overflow-wrap: anywhere;
+  }
+
+  .booking-receipt dl > div {
+    break-inside: avoid;
+  }
 }

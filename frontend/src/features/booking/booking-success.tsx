@@ -1,4 +1,6 @@
-import { CalendarCheck2, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+
+import { CalendarCheck2, CheckCircle2, Copy, Printer } from 'lucide-react';
 
 import type { Exam } from '../exams/exams.api';
 import type { Doctor } from './availability.api';
@@ -12,21 +14,44 @@ type BookingSuccessProps = {
   onNewBooking: () => void;
 };
 
-export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: BookingSuccessProps) {
-  const formattedDate = new Intl.DateTimeFormat('pt-BR', {
-    timeZone: CLINIC_TIME_ZONE,
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric',
-  }).format(new Date(appointment.startAt));
+const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: CLINIC_TIME_ZONE,
+  weekday: 'long',
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric',
+});
 
-  const formattedTime = new Intl.DateTimeFormat('pt-BR', {
-    timeZone: CLINIC_TIME_ZONE,
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(appointment.startAt));
+const timeFormatter = new Intl.DateTimeFormat('pt-BR', {
+  timeZone: CLINIC_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: BookingSuccessProps) {
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  const startAt = new Date(appointment.startAt);
+  const endAt = new Date(appointment.endAt);
+  const formattedStartDate = dateFormatter.format(startAt);
+  const formattedEndDate = dateFormatter.format(endAt);
+  const formattedStartTime = timeFormatter.format(startAt);
+  const formattedEndTime = timeFormatter.format(endAt);
+
+  const formattedEnd =
+    formattedStartDate === formattedEndDate
+      ? formattedEndTime
+      : `${formattedEndDate}, às ${formattedEndTime}`;
+
+  async function handleCopyAppointmentNumber() {
+    try {
+      await navigator.clipboard.writeText(String(appointment.id));
+      setCopyFeedback('Número do agendamento copiado.');
+    } catch {
+      setCopyFeedback('Não foi possível copiar. Selecione o número e copie manualmente.');
+    }
+  }
 
   return (
     <div className="py-5 text-center sm:py-8">
@@ -53,7 +78,17 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
 
       <p className="mt-3 text-base text-muted-ink">Seu exame foi agendado com sucesso.</p>
 
-      <div className="mt-7 rounded-xl border border-line bg-canvas p-5 text-left sm:p-6">
+      <div
+        className={[
+          'booking-receipt mt-7 rounded-xl border border-line',
+          'bg-canvas p-5 text-left sm:p-6',
+        ].join(' ')}
+      >
+        <div className="booking-receipt-print-heading">
+          <h3>Comprovante de agendamento</h3>
+          <p>Agendamento confirmado</p>
+        </div>
+
         <div className="flex items-center gap-2">
           <CalendarCheck2 size={20} className="text-brand-strong" aria-hidden="true" />
 
@@ -64,7 +99,30 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
           <div className="py-3">
             <dt className="text-sm text-muted-ink">Número do agendamento</dt>
 
-            <dd className="mt-1 font-semibold text-ink">#{appointment.id}</dd>
+            <dd className="mt-1">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <span className="font-semibold text-ink">#{appointment.id}</span>
+
+                <button
+                  type="button"
+                  onClick={handleCopyAppointmentNumber}
+                  className={[
+                    'booking-receipt-copy inline-flex min-h-11 items-center gap-2',
+                    'rounded-lg px-3 text-sm font-semibold text-brand-strong',
+                    'hover:bg-brand-subtle',
+                  ].join(' ')}
+                >
+                  <Copy size={16} aria-hidden="true" />
+                  Copiar número
+                </button>
+              </div>
+
+              {copyFeedback && (
+                <p role="status" className="mt-2 text-sm text-muted-ink">
+                  {copyFeedback}
+                </p>
+              )}
+            </dd>
           </div>
 
           <div className="py-3">
@@ -85,11 +143,19 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
             <dd className="mt-1 font-medium text-ink">{doctor.name}</dd>
           </div>
 
-          <div className="pt-3">
+          <div className="py-3">
             <dt className="text-sm text-muted-ink">Data e horário</dt>
 
             <dd className="mt-1 font-semibold text-ink">
-              {formattedDate}, às {formattedTime}
+              {formattedStartDate}, às {formattedStartTime}
+            </dd>
+          </div>
+
+          <div className="pt-3">
+            <dt className="text-sm text-muted-ink">Término previsto</dt>
+
+            <dd className="mt-1 font-semibold text-ink">
+              {formattedEnd}
               <span className="mt-1 block text-xs font-normal text-muted-ink">
                 Horário de Brasília
               </span>
@@ -98,16 +164,36 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
         </dl>
       </div>
 
-      <button
-        type="button"
-        onClick={onNewBooking}
+      <div
         className={[
-          'mt-7 min-h-12 rounded-xl',
-          'bg-brand px-7 font-semibold text-white hover:bg-brand-strong',
+          'mt-7 flex flex-col items-stretch justify-center gap-3',
+          'sm:flex-row sm:items-center',
         ].join(' ')}
       >
-        Agendar outro exame
-      </button>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          className={[
+            'inline-flex min-h-12 items-center justify-center gap-2 rounded-xl',
+            'border border-brand px-6 font-semibold text-brand-strong',
+            'hover:bg-brand-subtle',
+          ].join(' ')}
+        >
+          <Printer size={18} aria-hidden="true" />
+          Imprimir comprovante
+        </button>
+
+        <button
+          type="button"
+          onClick={onNewBooking}
+          className={[
+            'min-h-12 rounded-xl',
+            'bg-brand px-7 font-semibold text-white hover:bg-brand-strong',
+          ].join(' ')}
+        >
+          Agendar outro exame
+        </button>
+      </div>
     </div>
   );
 }
