@@ -17,6 +17,7 @@ describe('Appointments API (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let doctorId: number;
+  let nightDoctorId: number;
   let monday: string;
 
   const patientName = `E2E-${randomUUID()}`;
@@ -76,6 +77,16 @@ describe('Appointments API (e2e)', () => {
 
     doctorId = doctor.id;
 
+    const nightDoctor = await dataSource.getRepository(Doctor).findOneBy({
+      crm: 'CRM-MG 33333',
+    });
+
+    if (!nightDoctor) {
+      throw new Error('Night shift doctor seed is missing.');
+    }
+
+    nightDoctorId = nightDoctor.id;
+
     const date = DateTime.now()
       .setZone(CLINIC_TIME_ZONE)
       .plus({ weeks: 4 })
@@ -133,6 +144,77 @@ describe('Appointments API (e2e)', () => {
       .expect(200);
 
     expect(availability.body).not.toContain('09:20');
+  });
+
+  it('should persist a night appointment crossing UTC midnight', async () => {
+    const body = {
+      ...validBody(),
+      doctorId: nightDoctorId,
+      startAt: appointmentAt('21:20'),
+    };
+
+    const expectedStart = new Date(body.startAt);
+    const expectedEnd = new Date(expectedStart.getTime() + 40 * 60_000);
+
+    const expectedUtcDate = DateTime.fromISO(monday, {
+      zone: CLINIC_TIME_ZONE,
+    })
+      .plus({ days: 1 })
+      .toISODate();
+
+    // O atendimento pertence à segunda-feira no horário da clínica.
+    expect(DateTime.fromJSDate(expectedStart).setZone(CLINIC_TIME_ZONE).toISODate()).toBe(monday);
+
+    // Em UTC, o início pertence à terça-feira.
+    expect(DateTime.fromJSDate(expectedStart).toUTC().toISODate()).toBe(expectedUtcDate);
+
+    const availabilityBefore = await request(app.getHttpServer())
+      .get(`/api/doctors/${nightDoctorId}/availability`)
+      .query({
+        examId: 17,
+        date: monday,
+      })
+      .expect(200);
+
+    expect(availabilityBefore.body).toContain('21:20');
+
+    const response = await request(app.getHttpServer())
+      .post('/api/appointments')
+      .send(body)
+      .expect(201);
+
+    expect(response.body).toMatchObject({
+      patientName,
+      examId: 17,
+      doctorId: nightDoctorId,
+      startAt: expectedStart.toISOString(),
+      endAt: expectedEnd.toISOString(),
+    });
+
+    const saved = await dataSource.getRepository(Appointment).findOneBy({
+      id: response.body.id as number,
+    });
+
+    expect(saved).not.toBeNull();
+
+    expect(saved?.startAt.toISOString()).toBe(expectedStart.toISOString());
+
+    expect(saved?.endAt.toISOString()).toBe(expectedEnd.toISOString());
+
+    const availabilityAfter = await request(app.getHttpServer())
+      .get(`/api/doctors/${nightDoctorId}/availability`)
+      .query({
+        examId: 17,
+        date: monday,
+      })
+      .expect(200);
+
+    // O horário reservado não pode continuar disponível.
+    expect(availabilityAfter.body).not.toContain('21:20');
+
+    // O horário imediatamente anterior termina às 21:20.
+    // Não existe sobreposição entre os dois intervalos.
+    expect(availabilityAfter.body).toContain('20:40');
   });
 
   it('should reject an occupied time with HTTP 409', async () => {
