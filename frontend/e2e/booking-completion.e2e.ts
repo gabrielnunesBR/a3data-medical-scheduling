@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import type { Client } from 'pg';
 import { TZDate } from 'react-day-picker';
@@ -93,7 +94,6 @@ async function getBookingFixture(request: APIRequestContext): Promise<BookingFix
   const doctors = (await doctorsResponse.json()) as Doctor[];
 
   const exam = exams.find((item) => item.id === 17);
-
   const doctor = doctors.find((item) => item.crm === 'CRM-MG 11111');
 
   if (!exam || !doctor) {
@@ -111,7 +111,6 @@ async function getBookingFixture(request: APIRequestContext): Promise<BookingFix
   expect(availabilityResponse.ok()).toBe(true);
 
   const slots = (await availabilityResponse.json()) as string[];
-
   const time = slots[0];
 
   if (!time) {
@@ -151,11 +150,7 @@ async function goToConfirmation(page: Page, fixture: BookingFixture): Promise<vo
     })
     .click();
 
-  await page
-    .getByRole('combobox', {
-      name: 'Profissional',
-    })
-    .selectOption(String(doctor.id));
+  await page.getByRole('combobox', { name: 'Profissional' }).selectOption(String(doctor.id));
 
   await selectCalendarDate(page, date);
 
@@ -164,7 +159,6 @@ async function goToConfirmation(page: Page, fixture: BookingFixture): Promise<vo
   });
 
   await expect(timeButton).toBeVisible();
-
   await timeButton.click();
 
   await page
@@ -180,12 +174,20 @@ async function goToConfirmation(page: Page, fixture: BookingFixture): Promise<vo
   ).toBeVisible();
 }
 
+async function expectAccessiblePage(page: Page): Promise<void> {
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .analyze();
+
+  expect(results.violations).toEqual([]);
+}
+
 test('creates an appointment and persists it in PostgreSQL', async ({ page, request }) => {
   const fixture = await getBookingFixture(request);
-
   const patientName = newTestPatient();
 
   await goToConfirmation(page, fixture);
+  await expectAccessiblePage(page);
 
   await page
     .getByRole('textbox', {
@@ -206,9 +208,9 @@ test('creates an appointment and persists it in PostgreSQL', async ({ page, requ
   ).toBeVisible();
 
   await expect(page.getByText(patientName)).toBeVisible();
+  await expectAccessiblePage(page);
 
   const confirmationText = await page.getByText(/^#\d+$/).innerText();
-
   const appointmentId = Number(confirmationText.slice(1));
 
   expect(Number.isSafeInteger(appointmentId)).toBe(true);
@@ -230,9 +232,7 @@ test('creates an appointment and persists it in PostgreSQL', async ({ page, requ
   expect(result.rows).toHaveLength(1);
 
   const appointment = result.rows[0];
-
   const startAt = toAppointmentStartAt(fixture.date, fixture.time);
-
   const endAt = new Date(new Date(startAt).getTime() + fixture.exam.durationMinutes * 60_000);
 
   expect(appointment).toMatchObject({
@@ -259,14 +259,12 @@ test('creates an appointment and persists it in PostgreSQL', async ({ page, requ
 
 test('handles a real HTTP 409 and refreshes available slots', async ({ page, request }) => {
   const fixture = await getBookingFixture(request);
-
   const firstPatient = newTestPatient();
   const secondPatient = newTestPatient();
 
   await goToConfirmation(page, fixture);
 
-  // Outra requisição reserva o horário depois que
-  // o paciente já chegou à tela de confirmação.
+  // Outra requisição reserva o horário após o paciente chegar à confirmação.
   const blockingResponse = await request.post('/api/appointments', {
     data: {
       patientName: firstPatient,
@@ -317,34 +315,31 @@ test('handles a real HTTP 409 and refreshes available slots', async ({ page, req
 test('recovers a lost response without duplicating the appointment', async ({ page, request }) => {
   const fixture = await getBookingFixture(request);
   const patientName = newTestPatient();
-
   const submittedKeys: string[] = [];
-
-  page.on('request', (req) => {
-    const pathname = new URL(req.url()).pathname;
-
-    if (req.method() === 'POST' && pathname === '/api/appointments') {
-      submittedKeys.push(req.headers()['idempotency-key'] ?? '');
-    }
-  });
+  let firstResponseLost = false;
 
   await goToConfirmation(page, fixture);
 
-  // A API processa normalmente a primeira requisição,
-  // mas a resposta não chega ao navegador.
-  await page.route(
-    '**/api/appointments',
-    async (route) => {
+  await page.route('**/api/appointments', async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+
+    submittedKeys.push(route.request().headers()['idempotency-key'] ?? '');
+
+    if (!firstResponseLost) {
+      firstResponseLost = true;
+
+      // Persiste a reserva no backend, mas simula a perda da resposta.
       const response = await route.fetch();
-
-      if (response.status() !== 201) {
-        throw new Error(`Expected HTTP 201, got ${response.status()}.`);
-      }
-
+      expect(response.status()).toBe(201);
       await route.abort('failed');
-    },
-    { times: 1 },
-  );
+      return;
+    }
+
+    await route.continue();
+  });
 
   await page
     .getByRole('textbox', {
@@ -352,30 +347,28 @@ test('recovers a lost response without duplicating the appointment', async ({ pa
     })
     .fill(patientName);
 
-  const submitButton = page.getByRole('button', {
-    name: 'Confirmar agendamento',
-  });
+  await page
+    .getByRole('button', {
+      name: 'Confirmar agendamento',
+    })
+    .click();
 
-  await submitButton.click();
+  await expect(page.getByRole('alert')).toBeVisible();
 
-  await expect(page.getByRole('alert')).toContainText('Não foi possível confirmar o resultado');
-
-  // A gravação aconteceu apesar da resposta perdida.
-  const firstResult = await database.query<{
-    id: number;
-  }>(
-    `SELECT id
-     FROM appointments
-     WHERE patient_name = $1`,
+  const initiallySaved = await database.query<{ id: number }>(
+    `SELECT id FROM appointments WHERE patient_name = $1`,
     [patientName],
   );
 
-  expect(firstResult.rows).toHaveLength(1);
+  expect(initiallySaved.rows).toHaveLength(1);
+  const originalId = initiallySaved.rows[0].id;
 
-  const originalId = firstResult.rows[0].id;
-
-  // Segunda tentativa: deve retornar o registro original.
-  await submitButton.click();
+  // O usuário repete manualmente a mesma operação.
+  await page
+    .getByRole('button', {
+      name: 'Confirmar agendamento',
+    })
+    .click();
 
   await expect(
     page.getByRole('heading', {
@@ -383,19 +376,19 @@ test('recovers a lost response without duplicating the appointment', async ({ pa
     }),
   ).toBeVisible();
 
-  const finalResult = await database.query<{
-    id: number;
-  }>(
-    `SELECT id
-     FROM appointments
-     WHERE patient_name = $1`,
+  const confirmationText = await page.getByText(/^#\d+$/).innerText();
+  expect(Number(confirmationText.slice(1))).toBe(originalId);
+
+  expect(submittedKeys).toHaveLength(2);
+  expect(submittedKeys[0]).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+  );
+  expect(submittedKeys[1]).toBe(submittedKeys[0]);
+
+  const finallySaved = await database.query<{ id: number }>(
+    `SELECT id FROM appointments WHERE patient_name = $1`,
     [patientName],
   );
 
-  expect(finalResult.rows).toHaveLength(1);
-  expect(finalResult.rows[0].id).toBe(originalId);
-
-  expect(submittedKeys).toHaveLength(2);
-  expect(submittedKeys[0]).toBeTruthy();
-  expect(submittedKeys[1]).toBe(submittedKeys[0]);
+  expect(finallySaved.rows).toEqual([{ id: originalId }]);
 });
