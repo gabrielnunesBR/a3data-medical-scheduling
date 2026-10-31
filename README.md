@@ -457,6 +457,41 @@ A suíte de qualidade de interface verifica a ausência de transbordamento horiz
 
 Os agendamentos criados nos testes são identificados individualmente e removidos após cada cenário, quando a execução conclui normalmente.
 
+## Integração contínua
+
+O projeto utiliza GitHub Actions para executar automaticamente
+as verificações de qualidade e os testes da aplicação.
+
+O workflow está definido em `.github/workflows/ci.yml`
+e é acionado em pushes para a branch `main`, pull requests
+direcionados à `main` e execuções manuais.
+
+### Quality and unit tests
+
+- Instalação reproduzível com `npm ci`.
+- Verificação de formatação com Prettier.
+- Análise estática com Oxlint.
+- Verificação de tipos TypeScript.
+- Testes unitários do backend.
+- Testes de componentes do frontend.
+- Build do NestJS e React.
+
+### PostgreSQL integration tests
+
+- Inicialização de PostgreSQL 17 temporário.
+- Execução das migrations e seeds.
+- Testes E2E HTTP com Vitest e Supertest.
+- Instalação do Chromium.
+- Testes E2E com Playwright.
+- Verificações de acessibilidade com axe-core.
+
+Em caso de falhas no Playwright, o workflow disponibiliza
+relatórios e arquivos de diagnóstico como artifacts.
+
+O banco utilizado pelo CI é temporário e isolado. Não são
+necessárias credenciais de produção ou serviços externos
+para executar as suítes automatizadas.
+
 ### 5. Build, lint e formatação
 
 ```bash
