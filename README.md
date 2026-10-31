@@ -16,6 +16,38 @@ O fluxo principal está implementado no **backend NestJS** e no **frontend React
 | Testes do frontend | Vitest, React Testing Library, MSW, Playwright (Chromium), axe-core |
 | Infraestrutura | Docker Compose, npm Workspaces |
 
+## Arquitetura e decisões técnicas
+
+O projeto utiliza um **monorepo com npm Workspaces**, separando a API NestJS (`backend/`) da interface React (`frontend/`). Essa organização permite manter as duas aplicações e seus testes no mesmo repositório, com dependências e comandos de execução próprios.
+
+### Backend
+
+- **NestJS e TypeScript:** organização por módulos, injeção de dependências e separação entre controllers, services e regras de negócio.
+- **PostgreSQL:** persistência relacional e garantias de integridade transacional. A *exclusion constraint* GiST impede agendamentos sobrepostos para um mesmo médico, inclusive sob concorrência.
+- **TypeORM:** mapeamento das entidades e evolução do schema por migrations, mantendo `synchronize: false`.
+- **Zod:** validação dos dados recebidos pela API.
+- **Luxon:** tratamento de instantes, datas e fuso horário da clínica.
+
+### Frontend
+
+- **React, TypeScript e Vite:** aplicação de página única com inicialização rápida em desenvolvimento, sem necessidade de renderização no servidor para o fluxo solicitado.
+- **TanStack Query:** consultas, cache, invalidação e atualização da disponibilidade.
+- **React Hook Form e Zod:** gerenciamento e validação do formulário de confirmação.
+- **Tailwind CSS:** estilização responsiva, com componentes e padrões visuais próprios do projeto.
+- **React DayPicker:** seleção de datas considerando o fuso horário da clínica.
+
+O fluxo é dividido em seleção de exame, escolha de médico/data/horário, revisão e confirmação, e apresentação do resultado. As diretrizes visuais e de acessibilidade estão descritas em [`docs/ux-ui-decisions.md`](docs/ux-ui-decisions.md).
+
+### Premissas adotadas
+
+- Todos os médicos podem realizar todos os exames fornecidos no desafio.
+- Os turnos representam agendas semanais recorrentes; não foram fornecidas exceções específicas para férias, feriados ou afastamentos.
+- Cada exame ocupa integralmente a duração informada no catálogo.
+- Os horários candidatos são gerados a partir do **início de cada turno**, em intervalos iguais à duração do exame, sem ultrapassar o fim do expediente.
+- O fuso horário da clínica é `America/Sao_Paulo`. Os instantes são transmitidos com indicação explícita de fuso e podem ser persistidos ou serializados em UTC.
+- O horário de término é calculado exclusivamente no backend.
+- O frontend utiliza o proxy `/api` do Vite durante o desenvolvimento; a API é executada separadamente.
+
 ## Funcionalidades
 
 - Busca de exames por nome, com indicação da duração do procedimento.
@@ -450,11 +482,32 @@ docker compose down
 
 `docker compose down`, sem a opção `-v`, **preserva os volumes nomeados** do PostgreSQL. Evite `docker compose down -v` se desejar conservar os dados locais.
 
-## Notas sobre escopo e produção
+## Limitações e próximos passos
 
-O projeto foi desenvolvido para o escopo do desafio técnico. Os endpoints de consulta e criação de agendamentos são públicos, **sem autenticação ou autorização de usuários**. A interface utiliza pt-BR; erros HTTP conhecidos são traduzidos em mensagens amigáveis, sem exibir textos técnicos da API diretamente ao paciente.
+A implementação prioriza os requisitos do desafio: busca de exames, disponibilidade por médico e data, agendamento, prevenção de sobreposições e uma interface clara para o paciente.
 
-Para uso com pacientes reais, seriam necessárias avaliações e medidas adicionais de segurança, privacidade e operação, incluindo controles adequados de identidade, tratamento de dados pessoais, observabilidade e infraestrutura. As proteções atuais não substituem medidas adicionais de autenticação, proteção contra abuso e governança de dados.
+### Funcionalidades fora do escopo
+
+- Autenticação e autorização de pacientes ou profissionais.
+- Cancelamento, reagendamento e consulta do histórico pelo paciente.
+- Exceções de expediente para férias, feriados e afastamentos.
+- Notificações por e-mail ou SMS.
+- Painel administrativo para médicos ou atendentes.
+- Implantação em ambiente de produção.
+
+### Considerações para produção
+
+Os endpoints de consulta e criação são públicos e **não possuem autenticação ou autorização de usuários**. Para uso com pacientes reais, seriam necessários controles de identidade e acesso, políticas de privacidade e tratamento de dados pessoais, incluindo avaliação de conformidade com a LGPD.
+
+O rate limiting utiliza armazenamento em memória. Em uma implantação com múltiplas instâncias, seria necessário um mecanismo compartilhado ou limitação de requisições na infraestrutura, com configuração adequada dos proxies confiáveis.
+
+A idempotência é persistida no PostgreSQL, mas o frontend mantém as chaves apenas em memória: após recarregar a página, não é possível reutilizar a chave anterior pelo navegador. A garantia no backend também depende da permanência do agendamento associado à chave.
+
+Também seriam necessários HTTPS, gestão de segredos, monitoramento, observabilidade, políticas de backup e recuperação e avaliações adicionais de segurança e acessibilidade.
+
+### Possíveis evoluções
+
+Uma evolução natural seria incluir autenticação de pacientes e gerenciamento de reservas (consulta, cancelamento e reagendamento), seguida de exceções nas agendas e notificações. Essas funcionalidades não foram implementadas por não serem necessárias aos requisitos solicitados.
 
 Os materiais originais do desafio foram preservados em `challenge/`.
 
