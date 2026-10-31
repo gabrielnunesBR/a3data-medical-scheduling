@@ -63,8 +63,8 @@ describe('Booking receipt', () => {
     expect(details.getByText('Ressonância magnética')).toBeInTheDocument();
     expect(details.getByText('Dra. Helena Marques')).toBeInTheDocument();
     expect(details.getByText(/02 de novembro de 2026, às 09:20/i)).toBeInTheDocument();
-    expect(details.getByText('10:00')).toBeInTheDocument();
-    expect(details.getByText('Horário de Brasília')).toBeInTheDocument();
+    expect(details.getAllByText('10:00')).toHaveLength(2);
+    expect(details.getAllByText('Horário de Brasília')).toHaveLength(2);
   });
 
   it('should include the end date when the appointment crosses midnight', () => {
@@ -74,7 +74,22 @@ describe('Booking receipt', () => {
     });
 
     expect(screen.getByText(/02 de novembro de 2026, às 23:40/i)).toBeInTheDocument();
-    expect(screen.getByText(/03 de novembro de 2026, às 00:20/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/03 de novembro de 2026, às 00:20/i)).toHaveLength(2);
+  });
+
+  it('should include an accessible on-screen summary and a print-only date highlight', () => {
+    renderSuccess();
+
+    const receipt = document.querySelector('.booking-receipt');
+    expect(receipt).not.toBeNull();
+
+    const details = within(receipt as HTMLElement);
+    expect(details.getByText('Comprovante de agendamento')).toBeInTheDocument();
+    expect(details.getByText('Agendamento de exames')).toBeInTheDocument();
+    expect(details.getByText('Confirmado')).toBeInTheDocument();
+    expect(details.getByText('09:20')).toBeInTheDocument();
+    expect(details.getAllByText('10:00')).toHaveLength(2);
+    expect(details.getByText('Agendamento #123')).toBeInTheDocument();
   });
 
   it('should invoke the browser print dialog', async () => {

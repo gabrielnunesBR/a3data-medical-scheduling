@@ -84,12 +84,46 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
           'bg-canvas p-5 text-left sm:p-6',
         ].join(' ')}
       >
-        <div className="booking-receipt-print-heading">
-          <h3>Comprovante de agendamento</h3>
-          <p>Agendamento confirmado</p>
+        <div className="booking-receipt-print-heading" aria-hidden="true">
+          <div className="booking-receipt-print-masthead">
+            <div className="booking-receipt-print-brand">
+              <span className="booking-receipt-print-mark">
+                <CalendarCheck2 size={22} />
+              </span>
+              <div>
+                <strong>Agendamento de exames</strong>
+                <span>Exames de imagem</span>
+              </div>
+            </div>
+
+            <span className="booking-receipt-print-state">Confirmado</span>
+          </div>
+
+          <div className="booking-receipt-print-intro">
+            <h3>Comprovante de agendamento</h3>
+            <p>Confira os dados do seu exame agendado.</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="booking-receipt-print-summary" aria-hidden="true">
+          <p className="booking-receipt-print-eyebrow">Data do exame</p>
+          <p className="booking-receipt-print-date">{formattedStartDate}</p>
+
+          <div className="booking-receipt-print-times">
+            <div>
+              <span>Início</span>
+              <strong>{formattedStartTime}</strong>
+            </div>
+            <div>
+              <span>Término previsto</span>
+              <strong>{formattedEnd}</strong>
+            </div>
+          </div>
+
+          <p className="booking-receipt-print-zone">Horário de Brasília</p>
+        </div>
+
+        <div className="booking-receipt-details-heading flex items-center gap-2">
           <CalendarCheck2 size={20} className="text-brand-strong" aria-hidden="true" />
 
           <h3 className="font-semibold text-ink">Dados da confirmação</h3>
@@ -143,7 +177,7 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
             <dd className="mt-1 font-medium text-ink">{doctor.name}</dd>
           </div>
 
-          <div className="py-3">
+          <div className="booking-receipt-date-row py-3">
             <dt className="text-sm text-muted-ink">Data e horário</dt>
 
             <dd className="mt-1 font-semibold text-ink">
@@ -151,7 +185,7 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
             </dd>
           </div>
 
-          <div className="pt-3">
+          <div className="booking-receipt-end-row pt-3">
             <dt className="text-sm text-muted-ink">Término previsto</dt>
 
             <dd className="mt-1 font-semibold text-ink">
@@ -162,6 +196,11 @@ export function BookingSuccess({ appointment, exam, doctor, onNewBooking }: Book
             </dd>
           </div>
         </dl>
+
+        <div className="booking-receipt-print-footer" aria-hidden="true">
+          <span>Agendamento #{appointment.id}</span>
+          <p>Guarde este comprovante para consultar os dados da sua reserva.</p>
+        </div>
       </div>
 
       <div

@@ -277,6 +277,8 @@ test('creates an appointment and persists it in PostgreSQL', async ({ page, requ
   await page.emulateMedia({ media: 'print' });
   await expect(page.getByText('Comprovante de agendamento')).toBeVisible();
   await expect(page.locator('.booking-receipt')).toBeVisible();
+  await expect(page.locator('.booking-receipt-print-summary')).toBeVisible();
+  await expect(page.locator('.booking-receipt-print-footer')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Imprimir comprovante' })).toBeHidden();
   await expect(page.getByRole('button', { name: 'Copiar número' })).toBeHidden();
   await page.emulateMedia({ media: 'screen' });
