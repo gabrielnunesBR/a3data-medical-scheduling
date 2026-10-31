@@ -21,7 +21,7 @@ const patientSchema = z.object({
   patientName: z
     .string()
     .trim()
-    .min(2, 'Informe o nome do paciente.')
+    .min(1, 'Informe o nome do paciente.')
     .max(160, 'O nome deve ter no máximo 160 caracteres.'),
 });
 

@@ -1,4 +1,3 @@
-
 name: CI
 
 on:
@@ -45,6 +44,9 @@ jobs:
             "backend/test/**/*.ts" \
             "frontend/src/**/*.{ts,tsx}" \
             "frontend/e2e/**/*.ts"
+
+      - name: Lint backend
+        run: npm run lint --workspace=backend
 
       - name: Lint frontend
         run: npm run lint --workspace=frontend

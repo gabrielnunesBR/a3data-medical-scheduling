@@ -22,11 +22,18 @@ function createRequest(route?: string): Request {
   } as unknown as Request;
 }
 
-function createResponse(statusCode: number): Response {
+type MockResponse = Response & {
+  setHeaderMock: ReturnType<typeof vi.fn>;
+};
+
+function createResponse(statusCode: number): MockResponse {
+  const setHeaderMock = vi.fn();
+
   return Object.assign(new EventEmitter(), {
     statusCode,
-    setHeader: vi.fn(),
-  }) as unknown as Response;
+    setHeader: setHeaderMock,
+    setHeaderMock,
+  }) as unknown as MockResponse;
 }
 
 afterEach(() => {
@@ -128,7 +135,7 @@ describe('HTTP request logger', () => {
 
     httpRequestLogger(createRequest('/api/doctors'), response, next);
 
-    expect(response.setHeader).toHaveBeenCalledWith(
+    expect(response.setHeaderMock).toHaveBeenCalledWith(
       'X-Request-ID',
       expect.stringMatching(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
@@ -138,7 +145,7 @@ describe('HTTP request logger', () => {
     // O header é definido antes de entregar a requisição ao NestJS.
     expect(next).toHaveBeenCalledOnce();
 
-    const requestId = vi.mocked(response.setHeader).mock.calls[0]?.[1];
+    const requestId = response.setHeaderMock.mock.calls[0]?.[1];
 
     response.emit('finish');
 
@@ -162,8 +169,8 @@ describe('HTTP request logger', () => {
     httpRequestLogger(createRequest(), firstResponse, vi.fn());
     httpRequestLogger(createRequest(), secondResponse, vi.fn());
 
-    const firstId = vi.mocked(firstResponse.setHeader).mock.calls[0]?.[1];
-    const secondId = vi.mocked(secondResponse.setHeader).mock.calls[0]?.[1];
+    const firstId = firstResponse.setHeaderMock.mock.calls[0]?.[1];
+    const secondId = secondResponse.setHeaderMock.mock.calls[0]?.[1];
 
     expect(firstId).toEqual(expect.any(String));
     expect(secondId).toEqual(expect.any(String));
