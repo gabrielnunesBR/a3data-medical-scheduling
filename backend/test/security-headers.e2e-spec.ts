@@ -68,4 +68,45 @@ describe('HTTP security headers (e2e)', () => {
 
     expect(response.headers['x-powered-by']).toBeUndefined();
   });
+
+  it('should return unique request IDs for successful and failed HTTP requests', async () => {
+    const success = await request(app.getHttpServer()).get('/api/doctors');
+
+    const invalidRequest = await request(app.getHttpServer()).post('/api/appointments').send({});
+
+    const notFound = await request(app.getHttpServer()).get('/api/rota-inexistente');
+
+    expect(success.status).toBe(200);
+    expect(invalidRequest.status).toBe(400);
+    expect(notFound.status).toBe(404);
+
+    const requestIds = [
+      success.headers['x-request-id'],
+      invalidRequest.headers['x-request-id'],
+      notFound.headers['x-request-id'],
+    ];
+
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    for (const requestId of requestIds) {
+      expect(requestId).toMatch(uuidPattern);
+    }
+
+    expect(new Set(requestIds).size).toBe(3);
+  });
+
+  it('should not trust a request ID supplied by the client', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/doctors')
+      .set('X-Request-ID', 'client-controlled-id');
+
+    expect(response.status).toBe(200);
+
+    expect(response.headers['x-request-id']).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
+
+    expect(response.headers['x-request-id']).not.toBe('client-controlled-id');
+  });
 });

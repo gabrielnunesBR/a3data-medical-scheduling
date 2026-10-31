@@ -25,6 +25,7 @@ function createRequest(route?: string): Request {
 function createResponse(statusCode: number): Response {
   return Object.assign(new EventEmitter(), {
     statusCode,
+    setHeader: vi.fn(),
   }) as unknown as Response;
 }
 
@@ -117,5 +118,58 @@ describe('HTTP request logger', () => {
     expect(loggedContent).not.toContain('Paciente Sigiloso');
     expect(loggedContent).not.toContain('patientName');
     expect(loggedContent).not.toContain('secret-idempotency-key');
+  });
+
+  it('should generate a request ID and include it in the response and log', () => {
+    const log = vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+
+    const response = createResponse(200);
+    const next = vi.fn();
+
+    httpRequestLogger(createRequest('/api/doctors'), response, next);
+
+    expect(response.setHeader).toHaveBeenCalledWith(
+      'X-Request-ID',
+      expect.stringMatching(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      ),
+    );
+
+    // O header é definido antes de entregar a requisição ao NestJS.
+    expect(next).toHaveBeenCalledOnce();
+
+    const requestId = vi.mocked(response.setHeader).mock.calls[0]?.[1];
+
+    response.emit('finish');
+
+    expect(log).toHaveBeenCalledWith(
+      'http_request_completed',
+      expect.objectContaining({
+        requestId,
+        method: 'POST',
+        route: '/api/doctors',
+        statusCode: 200,
+      }),
+    );
+  });
+
+  it('should generate a different request ID for each request', () => {
+    vi.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
+
+    const firstResponse = createResponse(200);
+    const secondResponse = createResponse(200);
+
+    httpRequestLogger(createRequest(), firstResponse, vi.fn());
+    httpRequestLogger(createRequest(), secondResponse, vi.fn());
+
+    const firstId = vi.mocked(firstResponse.setHeader).mock.calls[0]?.[1];
+    const secondId = vi.mocked(secondResponse.setHeader).mock.calls[0]?.[1];
+
+    expect(firstId).toEqual(expect.any(String));
+    expect(secondId).toEqual(expect.any(String));
+    expect(firstId).not.toBe(secondId);
+
+    firstResponse.emit('finish');
+    secondResponse.emit('finish');
   });
 });

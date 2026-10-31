@@ -1,6 +1,8 @@
-import { Logger } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { performance } from 'node:perf_hooks';
+
+import { Logger } from '@nestjs/common';
 
 type HttpRequest = IncomingMessage & {
   route?: {
@@ -16,9 +18,13 @@ export function httpRequestLogger(
   next: () => void,
 ): void {
   const startedAt = performance.now();
+  const requestId = randomUUID();
+
+  response.setHeader('X-Request-ID', requestId);
 
   response.once('finish', () => {
     const metadata = {
+      requestId,
       method: request.method ?? 'UNKNOWN',
       route: typeof request.route?.path === 'string' ? request.route.path : 'unmatched',
       statusCode: response.statusCode,
