@@ -282,4 +282,30 @@ describe('Doctor availability', () => {
       ),
     ).toBeInTheDocument();
   });
+
+  it('should focus the heading when entering the availability step', async () => {
+    await goToAvailability();
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Escolha o médico, a data e o horário',
+      }),
+    ).toHaveFocus();
+  });
+
+  it('should restore focus to the exam heading when going back', async () => {
+    const user = await goToAvailability();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Voltar para exames',
+      }),
+    );
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Qual exame você deseja agendar?',
+      }),
+    ).toHaveFocus();
+  });
 });

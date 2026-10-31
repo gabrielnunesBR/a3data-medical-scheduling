@@ -10,7 +10,12 @@ import {
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest';
 
 import App from '../../App';
 import { server } from '../../test/server';
@@ -129,7 +134,61 @@ describe('Booking confirmation', () => {
 
     expect(
       await screen.findByRole('alert'),
-    ).toHaveTextContent('Informe o nome do paciente.');
+    ).toHaveTextContent(
+      'Informe o nome do paciente.',
+    );
+
+    expect(
+      screen.getByRole('textbox', {
+        name: 'Nome completo do paciente',
+      }),
+    ).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('should show only one appointment summary', async () => {
+    await goToConfirmation();
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'Resumo do atendimento',
+      }),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('complementary', {
+        name: 'Seu agendamento',
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should focus the confirmation heading after advancing', async () => {
+    await goToConfirmation();
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', {
+          name: 'Revise e confirme seu agendamento',
+        }),
+      ).toHaveFocus();
+    });
+  });
+
+  it('should focus the availability heading when returning', async () => {
+    const user = await goToConfirmation();
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Voltar para horários',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', {
+          name: 'Escolha o médico, a data e o horário',
+        }),
+      ).toHaveFocus();
+    });
   });
 
   it('should submit the appointment and show confirmation', async () => {
@@ -138,7 +197,7 @@ describe('Booking confirmation', () => {
     server.use(
       http.post('*/api/appointments', async ({ request }) => {
         const body =
-          await request.json() as CreateAppointmentInput;
+          (await request.json()) as CreateAppointmentInput;
 
         submitted = body;
 
@@ -194,17 +253,27 @@ describe('Booking confirmation', () => {
       screen.getByText('Maria Oliveira'),
     ).toBeInTheDocument();
 
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', {
+          name: 'Agendamento confirmado!',
+        }),
+      ).toHaveFocus();
+    });
+
     await user.click(
       screen.getByRole('button', {
         name: 'Agendar outro exame',
       }),
     );
 
-    expect(
-      screen.getByRole('heading', {
-        name: 'Qual exame você deseja agendar?',
-      }),
-    ).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByRole('heading', {
+          name: 'Qual exame você deseja agendar?',
+        }),
+      ).toHaveFocus();
+    });
   });
 
   it('should refresh availability after HTTP 409', async () => {
@@ -330,11 +399,49 @@ describe('Booking confirmation', () => {
     expect(
       await screen.findByRole('alert'),
     ).toHaveTextContent(
-      'Não foi possível confirmar o agendamento.',
+      'Não foi possível verificar se o agendamento foi concluído.',
     );
 
     expect(
       screen.queryByText('Internal database error'),
     ).not.toBeInTheDocument();
+  });
+
+  it('should not retry automatically after a server error', async () => {
+    let requests = 0;
+
+    server.use(
+      http.post('*/api/appointments', () => {
+        requests += 1;
+
+        return HttpResponse.json(
+          { message: 'Internal database error' },
+          { status: 500 },
+        );
+      }),
+    );
+
+    const user = await goToConfirmation();
+
+    await user.type(
+      screen.getByRole('textbox', {
+        name: 'Nome completo do paciente',
+      }),
+      'Maria Oliveira',
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Confirmar agendamento',
+      }),
+    );
+
+    expect(
+      await screen.findByRole('alert'),
+    ).toHaveTextContent(
+      'Não foi possível verificar se o agendamento foi concluído.',
+    );
+
+    expect(requests).toBe(1);
   });
 });

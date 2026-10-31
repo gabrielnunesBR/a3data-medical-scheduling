@@ -49,11 +49,11 @@ function getErrorMessage(error: Error): string {
         return 'Esse horário não pode mais ser agendado. Volte e escolha outro.';
 
       default:
-        return 'Não foi possível confirmar o agendamento. Tente novamente.';
+        return 'Não foi possível verificar se o agendamento foi concluído. Evite repetir o envio imediatamente.';
     }
   }
 
-  return 'Não foi possível conectar ao serviço. Confira sua conexão antes de tentar novamente.';
+  return 'Não foi possível verificar se o agendamento foi concluído. Confira sua conexão antes de tentar novamente.';
 }
 
 export function BookingConfirmation({
@@ -129,17 +129,23 @@ export function BookingConfirmation({
       </button>
 
       <div className="flex items-start gap-3">
-        <div className="flex size-11 shrink-0 items-center
-          justify-center rounded-xl bg-brand-subtle
-          text-brand-strong">
+        <div
+          className="flex size-11 shrink-0 items-center
+            justify-center rounded-xl bg-brand-subtle
+            text-brand-strong"
+        >
           <ClipboardCheck size={22} aria-hidden="true" />
         </div>
 
         <div>
           <h2
             id="booking-step-heading"
+            tabIndex={-1}
             className="text-xl font-semibold tracking-tight
-              sm:text-2xl"
+              sm:text-2xl focus-visible:rounded-sm
+              focus-visible:outline-2
+              focus-visible:outline-offset-4
+              focus-visible:outline-brand"
           >
             Revise e confirme seu agendamento
           </h2>
@@ -151,8 +157,10 @@ export function BookingConfirmation({
         </div>
       </div>
 
-      <div className="mt-7 rounded-xl border border-line
-        bg-canvas p-5">
+      <div
+        className="mt-7 rounded-xl border border-line
+          bg-canvas p-5"
+      >
         <h3 className="font-semibold text-ink">
           Resumo do atendimento
         </h3>
@@ -162,9 +170,11 @@ export function BookingConfirmation({
             <dt className="text-sm text-muted-ink">
               Exame
             </dt>
+
             <dd className="mt-1 font-medium text-ink">
               {exam.name}
             </dd>
+
             <dd className="text-sm text-muted-ink">
               Duração: {exam.durationMinutes} minutos
             </dd>
@@ -174,6 +184,7 @@ export function BookingConfirmation({
             <dt className="text-sm text-muted-ink">
               Profissional
             </dt>
+
             <dd className="mt-1 font-medium text-ink">
               {doctor.name}
             </dd>
@@ -183,6 +194,7 @@ export function BookingConfirmation({
             <dt className="text-sm text-muted-ink">
               Data
             </dt>
+
             <dd className="mt-1 font-medium text-ink">
               {formatClinicDate(date)}
             </dd>
@@ -192,6 +204,7 @@ export function BookingConfirmation({
             <dt className="text-sm text-muted-ink">
               Horário
             </dt>
+
             <dd className="mt-1 font-semibold text-brand-strong">
               {time} — horário de Brasília
             </dd>
@@ -225,10 +238,9 @@ export function BookingConfirmation({
               : 'patient-name-help'
           }
           {...register('patientName')}
-          className="mt-2 min-h-12 w-full rounded-xl border
-            border-line bg-white px-4 text-base text-ink
-            transition-colors focus:border-brand
-            focus:outline-none focus-visible:outline-none
+          className="mt-2 min-h-12 w-full rounded-xl
+            border border-line bg-white px-4
+            text-base text-ink transition-colors
             aria-invalid:border-danger"
         />
 
@@ -257,8 +269,9 @@ export function BookingConfirmation({
           ) && (
             <div
               role="alert"
-              className="mt-6 rounded-xl border border-red-200
-                bg-red-50 p-4 text-sm text-danger"
+              className="mt-6 rounded-xl border
+                border-red-200 bg-red-50
+                p-4 text-sm text-danger"
             >
               {getErrorMessage(mutation.error)}
             </div>
@@ -267,10 +280,10 @@ export function BookingConfirmation({
         <button
           type="submit"
           disabled={mutation.isPending}
-          className="mt-7 flex min-h-12 w-full items-center
-            justify-center rounded-xl bg-brand px-6
-            font-semibold text-white transition-colors
-            hover:bg-brand-strong
+          className="mt-7 flex min-h-12 w-full
+            items-center justify-center rounded-xl
+            bg-brand px-6 font-semibold text-white
+            transition-colors hover:bg-brand-strong
             disabled:cursor-not-allowed
             disabled:opacity-60"
         >
@@ -279,8 +292,10 @@ export function BookingConfirmation({
             : 'Confirmar agendamento'}
         </button>
 
-        <p className="mt-3 text-center text-xs
-          leading-5 text-muted-ink">
+        <p
+          className="mt-3 text-center text-xs
+            leading-5 text-muted-ink"
+        >
           A confirmação depende da disponibilidade
           do horário no momento do envio.
         </p>
