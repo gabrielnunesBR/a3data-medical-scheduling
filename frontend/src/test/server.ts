@@ -21,14 +21,10 @@ const exams = [
 
 export const server = setupServer(
   http.get('*/api/exams', ({ request }) => {
-    const search = new URL(request.url)
-      .searchParams.get('search')
-      ?.trim()
-      .toLocaleLowerCase('pt-BR') ?? '';
+    const search =
+      new URL(request.url).searchParams.get('search')?.trim().toLocaleLowerCase('pt-BR') ?? '';
 
-    const result = exams.filter((exam) =>
-      exam.name.toLocaleLowerCase('pt-BR').includes(search),
-    );
+    const result = exams.filter((exam) => exam.name.toLocaleLowerCase('pt-BR').includes(search));
 
     return HttpResponse.json(result);
   }),

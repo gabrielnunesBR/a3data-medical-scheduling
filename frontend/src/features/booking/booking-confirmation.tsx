@@ -1,10 +1,7 @@
 import { useRef } from 'react';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  useMutation,
-  useQueryClient,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -18,10 +15,7 @@ import {
   type Appointment,
   type CreateAppointmentInput,
 } from './appointments.api';
-import {
-  formatClinicDate,
-  toAppointmentStartAt,
-} from './booking-dates';
+import { formatClinicDate, toAppointmentStartAt } from './booking-dates';
 
 const patientSchema = z.object({
   patientName: z
@@ -50,10 +44,7 @@ type AppointmentSubmission = {
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof AppointmentRequestError) {
-    if (
-      error.status === 409 &&
-      error.code === 'IDEMPOTENCY_KEY_REUSED'
-    ) {
+    if (error.status === 409 && error.code === 'IDEMPOTENCY_KEY_REUSED') {
       return 'Esta confirmação não pode ser reutilizada com dados diferentes. Volte e revise o agendamento.';
     }
 
@@ -92,9 +83,7 @@ export function BookingConfirmation({
 }: BookingConfirmationProps) {
   const queryClient = useQueryClient();
 
-  const idempotencyKeysRef = useRef(
-    new Map<string, string>(),
-  );
+  const idempotencyKeysRef = useRef(new Map<string, string>());
 
   const {
     register,
@@ -107,13 +96,8 @@ export function BookingConfirmation({
     },
   });
 
-  const mutation = useMutation<
-    Appointment,
-    Error,
-    AppointmentSubmission
-  >({
-    mutationFn: ({ input, idempotencyKey }) =>
-      createAppointment(input, idempotencyKey),
+  const mutation = useMutation<Appointment, Error, AppointmentSubmission>({
+    mutationFn: ({ input, idempotencyKey }) => createAppointment(input, idempotencyKey),
 
     retry: false,
 
@@ -121,12 +105,7 @@ export function BookingConfirmation({
       idempotencyKeysRef.current.clear();
 
       await queryClient.invalidateQueries({
-        queryKey: [
-          'availability',
-          doctor.id,
-          exam.id,
-          date,
-        ],
+        queryKey: ['availability', doctor.id, exam.id, date],
       });
 
       onBooked(appointment);
@@ -139,12 +118,7 @@ export function BookingConfirmation({
         error.code !== 'IDEMPOTENCY_KEY_REUSED'
       ) {
         await queryClient.invalidateQueries({
-          queryKey: [
-            'availability',
-            doctor.id,
-            exam.id,
-            date,
-          ],
+          queryKey: ['availability', doctor.id, exam.id, date],
         });
 
         onConflict();
@@ -171,16 +145,12 @@ export function BookingConfirmation({
       startAt: input.startAt,
     });
 
-    let idempotencyKey =
-      idempotencyKeysRef.current.get(signature);
+    let idempotencyKey = idempotencyKeysRef.current.get(signature);
 
     if (!idempotencyKey) {
       idempotencyKey = crypto.randomUUID();
 
-      idempotencyKeysRef.current.set(
-        signature,
-        idempotencyKey,
-      );
+      idempotencyKeysRef.current.set(signature, idempotencyKey);
     }
 
     mutation.mutate({
@@ -211,21 +181,16 @@ export function BookingConfirmation({
         </h2>
 
         <p className="mt-3 text-sm leading-6 text-muted-ink">
-          Confira as informações selecionadas e informe
-          o nome completo do paciente para finalizar.
+          Confira as informações selecionadas e informe o nome completo do paciente para finalizar.
         </p>
       </div>
 
       <div className="mt-8 rounded-xl border border-line bg-canvas p-5 sm:p-6">
-        <h3 className="text-base font-semibold text-ink">
-          Resumo do atendimento
-        </h3>
+        <h3 className="text-base font-semibold text-ink">Resumo do atendimento</h3>
 
         <dl className="mt-4 divide-y divide-line">
           <div className="py-3">
-            <dt className="text-sm text-muted-ink">
-              Exame
-            </dt>
+            <dt className="text-sm text-muted-ink">Exame</dt>
 
             <dd className="mt-1 font-medium text-ink">
               {exam.name}
@@ -237,39 +202,26 @@ export function BookingConfirmation({
           </div>
 
           <div className="py-3">
-            <dt className="text-sm text-muted-ink">
-              Profissional
-            </dt>
+            <dt className="text-sm text-muted-ink">Profissional</dt>
 
-            <dd className="mt-1 font-medium text-ink">
-              {doctor.name}
-            </dd>
+            <dd className="mt-1 font-medium text-ink">{doctor.name}</dd>
           </div>
 
           <div className="py-3">
-            <dt className="text-sm text-muted-ink">
-              Data
-            </dt>
+            <dt className="text-sm text-muted-ink">Data</dt>
 
-            <dd className="mt-1 font-medium text-ink">
-              {formatClinicDate(date)}
-            </dd>
+            <dd className="mt-1 font-medium text-ink">{formatClinicDate(date)}</dd>
           </div>
 
           <div className="py-3">
-            <dt className="text-sm text-muted-ink">
-              Horário
-            </dt>
+            <dt className="text-sm text-muted-ink">Horário</dt>
 
-            <dd className="mt-1 font-semibold text-brand-strong">
-              {time}
-            </dd>
+            <dd className="mt-1 font-semibold text-brand-strong">{time}</dd>
           </div>
         </dl>
 
         <p className="mt-4 text-xs leading-5 text-muted-ink">
-          Os horários são apresentados no horário de
-          Brasília.
+          Os horários são apresentados no horário de Brasília.
         </p>
       </div>
 
@@ -281,10 +233,7 @@ export function BookingConfirmation({
         className="mt-8"
       >
         <div>
-          <label
-            htmlFor="patient-name"
-            className="block text-sm font-semibold text-ink"
-          >
+          <label htmlFor="patient-name" className="block text-sm font-semibold text-ink">
             Nome completo do paciente
           </label>
 
@@ -296,11 +245,7 @@ export function BookingConfirmation({
             placeholder="Digite o nome completo"
             disabled={mutation.isPending}
             aria-invalid={Boolean(errors.patientName)}
-            aria-describedby={
-              errors.patientName
-                ? 'patient-name-error'
-                : undefined
-            }
+            aria-describedby={errors.patientName ? 'patient-name-error' : undefined}
             className="mt-3 min-h-12 w-full rounded-xl border border-line bg-surface px-4 text-sm text-ink placeholder:text-muted-ink disabled:cursor-not-allowed disabled:opacity-60"
             {...register('patientName', {
               onChange: () => {
@@ -310,11 +255,7 @@ export function BookingConfirmation({
           />
 
           {errors.patientName && (
-            <p
-              id="patient-name-error"
-              role="alert"
-              className="mt-2 text-sm text-red-700"
-            >
+            <p id="patient-name-error" role="alert" className="mt-2 text-sm text-red-700">
               {errors.patientName.message}
             </p>
           )}
@@ -344,9 +285,7 @@ export function BookingConfirmation({
             disabled={mutation.isPending}
             className="min-h-12 rounded-xl bg-brand px-6 text-sm font-semibold text-white hover:bg-brand-strong disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {mutation.isPending
-              ? 'Confirmando agendamento...'
-              : 'Confirmar agendamento'}
+            {mutation.isPending ? 'Confirmando agendamento...' : 'Confirmar agendamento'}
           </button>
         </div>
       </form>

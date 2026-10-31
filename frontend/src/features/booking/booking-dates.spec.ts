@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  fromClinicDate,
-  toAppointmentStartAt,
-  toClinicDate,
-} from './booking-dates';
+import { fromClinicDate, toAppointmentStartAt, toClinicDate } from './booking-dates';
 
 describe('Clinic dates', () => {
   it('should interpret an instant using the clinic time zone', () => {
@@ -20,20 +16,14 @@ describe('Clinic dates', () => {
   });
 
   it('should convert clinic time to the correct UTC instant', () => {
-    expect(
-      toAppointmentStartAt('2030-01-07', '09:20'),
-    ).toBe('2030-01-07T12:20:00.000Z');
+    expect(toAppointmentStartAt('2030-01-07', '09:20')).toBe('2030-01-07T12:20:00.000Z');
   });
 
   it('should reject malformed appointment times', () => {
-    expect(() =>
-      toAppointmentStartAt('2030-01-07', '25:20'),
-    ).toThrow(RangeError);
+    expect(() => toAppointmentStartAt('2030-01-07', '25:20')).toThrow(RangeError);
   });
 
   it('should reject nonexistent calendar dates', () => {
-    expect(() =>
-      toAppointmentStartAt('2030-02-30', '09:20'),
-    ).toThrow(RangeError);
+    expect(() => toAppointmentStartAt('2030-02-30', '09:20')).toThrow(RangeError);
   });
 });

@@ -2,9 +2,7 @@ import { fileURLToPath } from 'node:url';
 
 import { defineConfig } from '@playwright/test';
 
-const repositoryRoot = fileURLToPath(
-  new URL('../', import.meta.url),
-);
+const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 
 export default defineConfig({
   testDir: './e2e',
@@ -40,12 +38,10 @@ export default defineConfig({
 
     {
       name: 'Frontend de testes',
-      command:
-        'npm run dev --workspace=frontend -- --host 127.0.0.1 --port 5174 --strictPort',
+      command: 'npm run dev --workspace=frontend -- --host 127.0.0.1 --port 5174 --strictPort',
       cwd: repositoryRoot,
       env: {
-        VITE_API_PROXY_TARGET:
-          'http://127.0.0.1:3100',
+        VITE_API_PROXY_TARGET: 'http://127.0.0.1:3100',
       },
       url: 'http://127.0.0.1:5174',
       reuseExistingServer: false,

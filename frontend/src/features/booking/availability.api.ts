@@ -11,9 +11,7 @@ type AvailabilityParams = {
   signal?: AbortSignal;
 };
 
-export async function fetchDoctors(
-  signal?: AbortSignal,
-): Promise<Doctor[]> {
+export async function fetchDoctors(signal?: AbortSignal): Promise<Doctor[]> {
   const response = await fetch('/api/doctors', { signal });
 
   if (!response.ok) {
@@ -34,10 +32,9 @@ export async function fetchAvailability({
     date,
   });
 
-  const response = await fetch(
-    `/api/doctors/${doctorId}/availability?${params.toString()}`,
-    { signal },
-  );
+  const response = await fetch(`/api/doctors/${doctorId}/availability?${params.toString()}`, {
+    signal,
+  });
 
   if (!response.ok) {
     throw new Error('Failed to fetch availability.');

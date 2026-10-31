@@ -1,12 +1,5 @@
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
-import {
-  render,
-  screen,
-  within,
-} from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { describe, expect, it } from 'vitest';
@@ -63,9 +56,7 @@ describe('Exam search', () => {
       'Ressonância',
     );
 
-    expect(
-      await screen.findByText('1 exame encontrado'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('1 exame encontrado')).toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {
@@ -95,13 +86,9 @@ describe('Exam search', () => {
       name: 'Seu agendamento',
     });
 
-    expect(
-      within(summary).getByText('Ressonância magnética'),
-    ).toBeInTheDocument();
+    expect(within(summary).getByText('Ressonância magnética')).toBeInTheDocument();
 
-    expect(
-      within(summary).getByText('Duração: 40 minutos'),
-    ).toBeInTheDocument();
+    expect(within(summary).getByText('Duração: 40 minutos')).toBeInTheDocument();
   });
 
   it('should show an empty state', async () => {
@@ -116,9 +103,7 @@ describe('Exam search', () => {
       'Exame inexistente',
     );
 
-    expect(
-      await screen.findByText('Nenhum exame encontrado'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Nenhum exame encontrado')).toBeInTheDocument();
   });
 
   it('should show an error when the API fails', async () => {
@@ -132,9 +117,7 @@ describe('Exam search', () => {
 
     renderApp();
 
-    expect(
-      await screen.findByRole('alert'),
-    ).toHaveTextContent(
+    expect(await screen.findByRole('alert')).toHaveTextContent(
       'Não foi possível carregar os exames.',
     );
 

@@ -1,21 +1,8 @@
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
-import {
-  render,
-  screen,
-  within,
-  waitFor,
-} from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import {
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import App from '../../App';
 import { server } from '../../test/server';
@@ -39,16 +26,12 @@ function renderApp() {
 
 function getSelectableDay(): HTMLButtonElement {
   const buttons = Array.from(
-    document.querySelectorAll<HTMLButtonElement>(
-      '.booking-calendar .rdp-day_button',
-    ),
+    document.querySelectorAll<HTMLButtonElement>('.booking-calendar .rdp-day_button'),
   );
 
   const day = buttons.find(
     (button) =>
-      !button.disabled &&
-      !button.closest('.rdp-disabled') &&
-      !button.closest('.rdp-outside'),
+      !button.disabled && !button.closest('.rdp-disabled') && !button.closest('.rdp-outside'),
   );
 
   if (!day) {
@@ -115,10 +98,7 @@ beforeEach(() => {
       ]),
     ),
 
-    http.get(
-      '*/api/doctors/:doctorId/availability',
-      () => HttpResponse.json(['09:20', '10:00']),
-    ),
+    http.get('*/api/doctors/:doctorId/availability', () => HttpResponse.json(['09:20', '10:00'])),
   );
 });
 
@@ -132,11 +112,7 @@ describe('Booking confirmation', () => {
       }),
     );
 
-    expect(
-      await screen.findByRole('alert'),
-    ).toHaveTextContent(
-      'Informe o nome do paciente.',
-    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Informe o nome do paciente.');
 
     expect(
       screen.getByRole('textbox', {
@@ -196,8 +172,7 @@ describe('Booking confirmation', () => {
 
     server.use(
       http.post('*/api/appointments', async ({ request }) => {
-        const body =
-          (await request.json()) as CreateAppointmentInput;
+        const body = (await request.json()) as CreateAppointmentInput;
 
         submitted = body;
 
@@ -205,9 +180,7 @@ describe('Booking confirmation', () => {
           {
             id: 71,
             ...body,
-            endAt: new Date(
-              new Date(body.startAt).getTime() + 40 * 60_000,
-            ).toISOString(),
+            endAt: new Date(new Date(body.startAt).getTime() + 40 * 60_000).toISOString(),
             createdAt: '2030-01-01T12:00:00.000Z',
           },
           { status: 201 },
@@ -240,18 +213,12 @@ describe('Booking confirmation', () => {
       patientName: 'Maria Oliveira',
       examId: 17,
       doctorId: 1,
-      startAt: expect.stringMatching(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/,
-      ),
+      startAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00\.000Z$/),
     });
 
-    expect(
-      screen.getByText('#71'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('#71')).toBeInTheDocument();
 
-    expect(
-      screen.getByText('Maria Oliveira'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Maria Oliveira')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(
@@ -280,18 +247,12 @@ describe('Booking confirmation', () => {
     let availableSlots = ['09:20', '10:00'];
 
     server.use(
-      http.get(
-        '*/api/doctors/:doctorId/availability',
-        () => HttpResponse.json(availableSlots),
-      ),
+      http.get('*/api/doctors/:doctorId/availability', () => HttpResponse.json(availableSlots)),
 
       http.post('*/api/appointments', () => {
         availableSlots = ['10:00'];
 
-        return HttpResponse.json(
-          { message: 'Conflict' },
-          { status: 409 },
-        );
+        return HttpResponse.json({ message: 'Conflict' }, { status: 409 });
       }),
     );
 
@@ -310,9 +271,7 @@ describe('Booking confirmation', () => {
       }),
     );
 
-    expect(
-      await screen.findByRole('alert'),
-    ).toHaveTextContent(
+    expect(await screen.findByRole('alert')).toHaveTextContent(
       'Esse horário acabou de ser reservado.',
     );
 
@@ -334,18 +293,13 @@ describe('Booking confirmation', () => {
       name: 'Seu agendamento',
     });
 
-    expect(
-      within(summary).queryByText('09:20'),
-    ).not.toBeInTheDocument();
+    expect(within(summary).queryByText('09:20')).not.toBeInTheDocument();
   });
 
   it('should show a friendly message for HTTP 422', async () => {
     server.use(
       http.post('*/api/appointments', () =>
-        HttpResponse.json(
-          { message: 'Invalid appointment time' },
-          { status: 422 },
-        ),
+        HttpResponse.json({ message: 'Invalid appointment time' }, { status: 422 }),
       ),
     );
 
@@ -364,9 +318,7 @@ describe('Booking confirmation', () => {
       }),
     );
 
-    expect(
-      await screen.findByRole('alert'),
-    ).toHaveTextContent(
+    expect(await screen.findByRole('alert')).toHaveTextContent(
       'Esse horário não pode mais ser agendado.',
     );
   });
@@ -374,10 +326,7 @@ describe('Booking confirmation', () => {
   it('should not expose technical errors to the patient', async () => {
     server.use(
       http.post('*/api/appointments', () =>
-        HttpResponse.json(
-          { message: 'Internal database error' },
-          { status: 500 },
-        ),
+        HttpResponse.json({ message: 'Internal database error' }, { status: 500 }),
       ),
     );
 
@@ -396,15 +345,11 @@ describe('Booking confirmation', () => {
       }),
     );
 
-    expect(
-      await screen.findByRole('alert'),
-    ).toHaveTextContent(
+    expect(await screen.findByRole('alert')).toHaveTextContent(
       'Não foi possível confirmar o resultado do agendamento.',
     );
 
-    expect(
-      screen.queryByText('Internal database error'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Internal database error')).not.toBeInTheDocument();
   });
 
   it('should not retry automatically after a server error', async () => {
@@ -414,10 +359,7 @@ describe('Booking confirmation', () => {
       http.post('*/api/appointments', () => {
         requests += 1;
 
-        return HttpResponse.json(
-          { message: 'Internal database error' },
-          { status: 500 },
-        );
+        return HttpResponse.json({ message: 'Internal database error' }, { status: 500 });
       }),
     );
 
@@ -436,9 +378,7 @@ describe('Booking confirmation', () => {
       }),
     );
 
-    expect(
-      await screen.findByRole('alert'),
-    ).toHaveTextContent(
+    expect(await screen.findByRole('alert')).toHaveTextContent(
       'Não foi possível confirmar o resultado do agendamento.',
     );
 
@@ -448,10 +388,7 @@ describe('Booking confirmation', () => {
   it('should show a friendly message for HTTP 429', async () => {
     server.use(
       http.post('*/api/appointments', () =>
-        HttpResponse.json(
-          { message: 'Too Many Requests' },
-          { status: 429 },
-        ),
+        HttpResponse.json({ message: 'Too Many Requests' }, { status: 429 }),
       ),
     );
 
@@ -470,15 +407,11 @@ describe('Booking confirmation', () => {
       }),
     );
 
-    expect(
-      await screen.findByRole('alert'),
-    ).toHaveTextContent(
+    expect(await screen.findByRole('alert')).toHaveTextContent(
       'Muitas tentativas de agendamento em pouco tempo.',
     );
 
-    expect(
-      screen.queryByText('Too Many Requests'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Too Many Requests')).not.toBeInTheDocument();
   });
 
   it('reuses the same idempotency key when retrying identical data', async () => {
@@ -486,14 +419,9 @@ describe('Booking confirmation', () => {
 
     server.use(
       http.post('*/api/appointments', ({ request }) => {
-        keys.push(
-          request.headers.get('Idempotency-Key') ?? '',
-        );
+        keys.push(request.headers.get('Idempotency-Key') ?? '');
 
-        return HttpResponse.json(
-          { message: 'Internal Server Error' },
-          { status: 500 },
-        );
+        return HttpResponse.json({ message: 'Internal Server Error' }, { status: 500 });
       }),
     );
 
@@ -515,11 +443,7 @@ describe('Booking confirmation', () => {
       expect(keys).toHaveLength(1);
     });
 
-    expect(
-      await screen.findByRole('alert'),
-    ).toHaveTextContent(
-      'Você pode tentar novamente',
-    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Você pode tentar novamente');
 
     await user.click(submitButton);
 
@@ -527,9 +451,7 @@ describe('Booking confirmation', () => {
       expect(keys).toHaveLength(2);
     });
 
-    expect(keys[0]).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-    );
+    expect(keys[0]).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
 
     expect(keys[1]).toBe(keys[0]);
 

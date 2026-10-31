@@ -1,12 +1,6 @@
-
 import { randomUUID } from 'node:crypto';
 
-import {
-  expect,
-  test,
-  type APIRequestContext,
-  type Page,
-} from '@playwright/test';
+import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
 import type { Client } from 'pg';
 import { TZDate } from 'react-day-picker';
 
@@ -39,9 +33,7 @@ test.beforeAll(async () => {
     database_name: string;
   }>('SELECT current_database() AS database_name');
 
-  if (
-    result.rows[0]?.database_name !== 'medical_scheduling_test'
-  ) {
+  if (result.rows[0]?.database_name !== 'medical_scheduling_test') {
     throw new Error('Connected to an unexpected database.');
   }
 });
@@ -88,9 +80,7 @@ function futureMonday(): string {
   return toClinicDate(date);
 }
 
-async function getBookingFixture(
-  request: APIRequestContext,
-): Promise<BookingFixture> {
+async function getBookingFixture(request: APIRequestContext): Promise<BookingFixture> {
   const [examsResponse, doctorsResponse] = await Promise.all([
     request.get('/api/exams'),
     request.get('/api/doctors'),
@@ -104,9 +94,7 @@ async function getBookingFixture(
 
   const exam = exams.find((item) => item.id === 17);
 
-  const doctor = doctors.find(
-    (item) => item.crm === 'CRM-MG 11111',
-  );
+  const doctor = doctors.find((item) => item.crm === 'CRM-MG 11111');
 
   if (!exam || !doctor) {
     throw new Error('Required exam or doctor seed is missing.');
@@ -117,8 +105,7 @@ async function getBookingFixture(
   const date = futureMonday();
 
   const availabilityResponse = await request.get(
-    `/api/doctors/${doctor.id}/availability` +
-      `?examId=${exam.id}&date=${date}`,
+    `/api/doctors/${doctor.id}/availability` + `?examId=${exam.id}&date=${date}`,
   );
 
   expect(availabilityResponse.ok()).toBe(true);
@@ -128,21 +115,15 @@ async function getBookingFixture(
   const time = slots[0];
 
   if (!time) {
-    throw new Error(
-      `No available test slots for doctor ${doctor.id} on ${date}.`,
-    );
+    throw new Error(`No available test slots for doctor ${doctor.id} on ${date}.`);
   }
 
   return { exam, doctor, date, time };
 }
 
-async function selectCalendarDate(
-  page: Page,
-  date: string,
-): Promise<void> {
+async function selectCalendarDate(page: Page, date: string): Promise<void> {
   const day = page.locator(
-    `.booking-calendar .rdp-day[data-day="${date}"]` +
-      ':not(.rdp-outside) .rdp-day_button',
+    `.booking-calendar .rdp-day[data-day="${date}"]` + ':not(.rdp-outside) .rdp-day_button',
   );
 
   for (let attempt = 0; attempt < 8; attempt++) {
@@ -151,27 +132,18 @@ async function selectCalendarDate(
       return;
     }
 
-    await page
-      .locator('.booking-calendar .rdp-button_next')
-      .click();
+    await page.locator('.booking-calendar .rdp-button_next').click();
   }
 
   throw new Error(`Could not select calendar date: ${date}`);
 }
 
-async function goToConfirmation(
-  page: Page,
-  fixture: BookingFixture,
-): Promise<void> {
+async function goToConfirmation(page: Page, fixture: BookingFixture): Promise<void> {
   const { exam, doctor, date, time } = fixture;
 
   await page.goto('/');
 
-  await page
-    .getByRole('button')
-    .filter({ hasText: exam.name })
-    .first()
-    .click();
+  await page.getByRole('button').filter({ hasText: exam.name }).first().click();
 
   await page
     .getByRole('button', {
@@ -208,10 +180,7 @@ async function goToConfirmation(
   ).toBeVisible();
 }
 
-test('creates an appointment and persists it in PostgreSQL', async ({
-  page,
-  request,
-}) => {
+test('creates an appointment and persists it in PostgreSQL', async ({ page, request }) => {
   const fixture = await getBookingFixture(request);
 
   const patientName = newTestPatient();
@@ -238,9 +207,7 @@ test('creates an appointment and persists it in PostgreSQL', async ({
 
   await expect(page.getByText(patientName)).toBeVisible();
 
-  const confirmationText = await page
-    .getByText(/^#\d+$/)
-    .innerText();
+  const confirmationText = await page.getByText(/^#\d+$/).innerText();
 
   const appointmentId = Number(confirmationText.slice(1));
 
@@ -264,15 +231,9 @@ test('creates an appointment and persists it in PostgreSQL', async ({
 
   const appointment = result.rows[0];
 
-  const startAt = toAppointmentStartAt(
-    fixture.date,
-    fixture.time,
-  );
+  const startAt = toAppointmentStartAt(fixture.date, fixture.time);
 
-  const endAt = new Date(
-    new Date(startAt).getTime() +
-      fixture.exam.durationMinutes * 60_000,
-  );
+  const endAt = new Date(new Date(startAt).getTime() + fixture.exam.durationMinutes * 60_000);
 
   expect(appointment).toMatchObject({
     id: appointmentId,
@@ -291,16 +252,12 @@ test('creates an appointment and persists it in PostgreSQL', async ({
 
   expect(availabilityResponse.ok()).toBe(true);
 
-  const availableSlots =
-    (await availabilityResponse.json()) as string[];
+  const availableSlots = (await availabilityResponse.json()) as string[];
 
   expect(availableSlots).not.toContain(fixture.time);
 });
 
-test('handles a real HTTP 409 and refreshes available slots', async ({
-  page,
-  request,
-}) => {
+test('handles a real HTTP 409 and refreshes available slots', async ({ page, request }) => {
   const fixture = await getBookingFixture(request);
 
   const firstPatient = newTestPatient();
@@ -310,20 +267,14 @@ test('handles a real HTTP 409 and refreshes available slots', async ({
 
   // Outra requisição reserva o horário depois que
   // o paciente já chegou à tela de confirmação.
-  const blockingResponse = await request.post(
-    '/api/appointments',
-    {
-      data: {
-        patientName: firstPatient,
-        examId: fixture.exam.id,
-        doctorId: fixture.doctor.id,
-        startAt: toAppointmentStartAt(
-          fixture.date,
-          fixture.time,
-        ),
-      },
+  const blockingResponse = await request.post('/api/appointments', {
+    data: {
+      patientName: firstPatient,
+      examId: fixture.exam.id,
+      doctorId: fixture.doctor.id,
+      startAt: toAppointmentStartAt(fixture.date, fixture.time),
     },
-  );
+  });
 
   expect(blockingResponse.status()).toBe(201);
 
@@ -339,11 +290,7 @@ test('handles a real HTTP 409 and refreshes available slots', async ({
     })
     .click();
 
-  await expect(
-    page.getByRole('alert'),
-  ).toContainText(
-    'Esse horário acabou de ser reservado.',
-  );
+  await expect(page.getByRole('alert')).toContainText('Esse horário acabou de ser reservado.');
 
   await expect(
     page.getByRole('heading', {
@@ -364,15 +311,10 @@ test('handles a real HTTP 409 and refreshes available slots', async ({
     [[firstPatient, secondPatient]],
   );
 
-  expect(result.rows).toEqual([
-    { patient_name: firstPatient },
-  ]);
+  expect(result.rows).toEqual([{ patient_name: firstPatient }]);
 });
 
-test('recovers a lost response without duplicating the appointment', async ({
-  page,
-  request,
-}) => {
+test('recovers a lost response without duplicating the appointment', async ({ page, request }) => {
   const fixture = await getBookingFixture(request);
   const patientName = newTestPatient();
 
@@ -381,13 +323,8 @@ test('recovers a lost response without duplicating the appointment', async ({
   page.on('request', (req) => {
     const pathname = new URL(req.url()).pathname;
 
-    if (
-      req.method() === 'POST' &&
-      pathname === '/api/appointments'
-    ) {
-      submittedKeys.push(
-        req.headers()['idempotency-key'] ?? '',
-      );
+    if (req.method() === 'POST' && pathname === '/api/appointments') {
+      submittedKeys.push(req.headers()['idempotency-key'] ?? '');
     }
   });
 
@@ -401,9 +338,7 @@ test('recovers a lost response without duplicating the appointment', async ({
       const response = await route.fetch();
 
       if (response.status() !== 201) {
-        throw new Error(
-          `Expected HTTP 201, got ${response.status()}.`,
-        );
+        throw new Error(`Expected HTTP 201, got ${response.status()}.`);
       }
 
       await route.abort('failed');
@@ -423,11 +358,7 @@ test('recovers a lost response without duplicating the appointment', async ({
 
   await submitButton.click();
 
-  await expect(
-    page.getByRole('alert'),
-  ).toContainText(
-    'Não foi possível confirmar o resultado',
-  );
+  await expect(page.getByRole('alert')).toContainText('Não foi possível confirmar o resultado');
 
   // A gravação aconteceu apesar da resposta perdida.
   const firstResult = await database.query<{

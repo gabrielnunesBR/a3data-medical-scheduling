@@ -1,25 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  CheckCircle2,
-  Search,
-  ScanLine,
-} from 'lucide-react';
+import { CheckCircle2, Search, ScanLine } from 'lucide-react';
 
-import {
-  fetchExams,
-  type Exam,
-} from './exams.api';
+import { fetchExams, type Exam } from './exams.api';
 
 type ExamSearchProps = {
   selectedExamId: number | null;
   onSelect: (exam: Exam) => void;
 };
 
-export function ExamSearch({
-  selectedExamId,
-  onSelect,
-}: ExamSearchProps) {
+export function ExamSearch({ selectedExamId, onSelect }: ExamSearchProps) {
   const [inputValue, setInputValue] = useState('');
   const [search, setSearch] = useState('');
 
@@ -47,10 +37,7 @@ export function ExamSearch({
 
   return (
     <div className="mt-7">
-      <label
-        htmlFor="exam-search"
-        className="block text-sm font-semibold text-ink"
-      >
+      <label htmlFor="exam-search" className="block text-sm font-semibold text-ink">
         Buscar exame pelo nome
       </label>
 
@@ -77,22 +64,14 @@ export function ExamSearch({
         />
       </div>
 
-      <p
-        id="exam-search-help"
-        className="mt-2 text-sm text-muted-ink"
-      >
+      <p id="exam-search-help" className="mt-2 text-sm text-muted-ink">
         Pesquise pelo nome ou escolha um exame na lista.
       </p>
 
       <div className="mt-6">
         {isLoading ? (
-          <div
-            role="status"
-            className="space-y-3"
-          >
-            <p className="text-sm text-muted-ink">
-              Buscando exames...
-            </p>
+          <div role="status" className="space-y-3">
+            <p className="text-sm text-muted-ink">Buscando exames...</p>
 
             {[1, 2, 3].map((item) => (
               <div
@@ -109,13 +88,9 @@ export function ExamSearch({
             className="rounded-xl border border-red-200
               bg-red-50 p-5"
           >
-            <p className="font-medium text-danger">
-              Não foi possível carregar os exames.
-            </p>
+            <p className="font-medium text-danger">Não foi possível carregar os exames.</p>
 
-            <p className="mt-2 text-sm text-muted-ink">
-              Verifique sua conexão e tente novamente.
-            </p>
+            <p className="mt-2 text-sm text-muted-ink">Verifique sua conexão e tente novamente.</p>
 
             <button
               type="button"
@@ -133,24 +108,14 @@ export function ExamSearch({
             className="rounded-xl border border-line
               bg-canvas px-6 py-10 text-center"
           >
-            <p className="font-medium text-ink">
-              Nenhum exame encontrado
-            </p>
+            <p className="font-medium text-ink">Nenhum exame encontrado</p>
 
-            <p className="mt-2 text-sm text-muted-ink">
-              Tente pesquisar usando outro termo.
-            </p>
+            <p className="mt-2 text-sm text-muted-ink">Tente pesquisar usando outro termo.</p>
           </div>
         ) : (
           <>
-            <p
-              role="status"
-              className="mb-4 text-sm text-muted-ink"
-            >
-              {exams.length}{' '}
-              {exams.length === 1
-                ? 'exame encontrado'
-                : 'exames encontrados'}
+            <p role="status" className="mb-4 text-sm text-muted-ink">
+              {exams.length} {exams.length === 1 ? 'exame encontrado' : 'exames encontrados'}
             </p>
 
             <ul
@@ -184,16 +149,11 @@ export function ExamSearch({
                           items-center justify-center rounded-lg
                           bg-canvas text-brand-strong"
                       >
-                        <ScanLine
-                          size={20}
-                          aria-hidden="true"
-                        />
+                        <ScanLine size={20} aria-hidden="true" />
                       </span>
 
                       <span className="min-w-0 flex-1">
-                        <span className="block font-medium text-ink">
-                          {exam.name}
-                        </span>
+                        <span className="block font-medium text-ink">{exam.name}</span>
 
                         <span
                           className="mt-1 block text-sm
@@ -204,19 +164,18 @@ export function ExamSearch({
                       </span>
 
                       {selected ? (
-                        <span className="flex shrink-0 items-center
-                          gap-1 text-sm font-semibold text-brand-strong">
-                          <CheckCircle2
-                            size={19}
-                            aria-hidden="true"
-                          />
-                          <span className="hidden sm:inline">
-                            Selecionado
-                          </span>
+                        <span
+                          className="flex shrink-0 items-center
+                          gap-1 text-sm font-semibold text-brand-strong"
+                        >
+                          <CheckCircle2 size={19} aria-hidden="true" />
+                          <span className="hidden sm:inline">Selecionado</span>
                         </span>
                       ) : (
-                        <span className="hidden shrink-0 text-sm
-                          font-medium text-brand-strong sm:inline">
+                        <span
+                          className="hidden shrink-0 text-sm
+                          font-medium text-brand-strong sm:inline"
+                        >
                           Selecionar
                         </span>
                       )}

@@ -1,8 +1,8 @@
-@import "@fontsource-variable/inter";
-@import "tailwindcss";
+@import '@fontsource-variable/inter';
+@import 'tailwindcss';
 
 @theme {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 
   --color-brand: #0f766e;
   --color-brand-strong: #115e59;
@@ -88,7 +88,7 @@ body {
 }
 
 /* Erros de validação mantêm a borda vermelha */
-#patient-name[aria-invalid="true"],
-#patient-name[aria-invalid="true"]:focus {
+#patient-name[aria-invalid='true'],
+#patient-name[aria-invalid='true']:focus {
   border-color: var(--color-danger);
 }

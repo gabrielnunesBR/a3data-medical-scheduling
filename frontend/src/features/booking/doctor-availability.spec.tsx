@@ -1,20 +1,8 @@
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
-import {
-  render,
-  screen,
-  within,
-} from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import {
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import App from '../../App';
 import { server } from '../../test/server';
@@ -35,16 +23,11 @@ function renderApp() {
 
 function getAvailableCalendarDay(): HTMLButtonElement {
   const buttons = Array.from(
-    document.querySelectorAll<HTMLButtonElement>(
-      '.booking-calendar .rdp-day_button',
-    ),
+    document.querySelectorAll<HTMLButtonElement>('.booking-calendar .rdp-day_button'),
   );
 
   const button = buttons.find(
-    (item) =>
-      !item.disabled &&
-      !item.closest('.rdp-disabled') &&
-      !item.closest('.rdp-outside'),
+    (item) => !item.disabled && !item.closest('.rdp-disabled') && !item.closest('.rdp-outside'),
   );
 
   if (!button) {
@@ -95,9 +78,8 @@ beforeEach(() => {
       ]),
     ),
 
-    http.get(
-      '*/api/doctors/:doctorId/availability',
-      () => HttpResponse.json(['08:00', '08:40', '09:20']),
+    http.get('*/api/doctors/:doctorId/availability', () =>
+      HttpResponse.json(['08:00', '08:40', '09:20']),
     ),
   );
 });
@@ -135,13 +117,9 @@ describe('Doctor availability', () => {
       name: 'Seu agendamento',
     });
 
-    expect(
-      within(summary).getByText('Dra. Helena Marques'),
-    ).toBeInTheDocument();
+    expect(within(summary).getByText('Dra. Helena Marques')).toBeInTheDocument();
 
-    expect(
-      within(summary).getByText('09:20'),
-    ).toBeInTheDocument();
+    expect(within(summary).getByText('09:20')).toBeInTheDocument();
   });
 
   it('should clear the selected time when the doctor changes', async () => {
@@ -166,19 +144,11 @@ describe('Doctor availability', () => {
       name: 'Seu agendamento',
     });
 
-    expect(
-      within(summary).getByText('Dr. Rafael Teixeira'),
-    ).toBeInTheDocument();
+    expect(within(summary).getByText('Dr. Rafael Teixeira')).toBeInTheDocument();
 
-    expect(
-      within(summary).queryByText('09:20'),
-    ).not.toBeInTheDocument();
+    expect(within(summary).queryByText('09:20')).not.toBeInTheDocument();
 
-    expect(
-      screen.getByText(
-        'Escolha uma data para consultar os horários.',
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Escolha uma data para consultar os horários.')).toBeInTheDocument();
   });
 
   it('should clear the selected time when the date is cleared', async () => {
@@ -205,9 +175,7 @@ describe('Doctor availability', () => {
       name: 'Seu agendamento',
     });
 
-    expect(
-      within(summary).queryByText('09:20'),
-    ).not.toBeInTheDocument();
+    expect(within(summary).queryByText('09:20')).not.toBeInTheDocument();
   });
 
   it('should reset dependent selections when the exam changes', async () => {
@@ -244,26 +212,15 @@ describe('Doctor availability', () => {
       name: 'Seu agendamento',
     });
 
-    expect(
-      within(summary).getByText('Raio-X de tórax'),
-    ).toBeInTheDocument();
+    expect(within(summary).getByText('Raio-X de tórax')).toBeInTheDocument();
 
-    expect(
-      within(summary).getAllByText('Não selecionado'),
-    ).toHaveLength(1);
+    expect(within(summary).getAllByText('Não selecionado')).toHaveLength(1);
 
-    expect(
-      within(summary).getByText('Não selecionados'),
-    ).toBeInTheDocument();
+    expect(within(summary).getByText('Não selecionados')).toBeInTheDocument();
   });
 
   it('should show an empty state when no slots are available', async () => {
-    server.use(
-      http.get(
-        '*/api/doctors/:doctorId/availability',
-        () => HttpResponse.json([]),
-      ),
-    );
+    server.use(http.get('*/api/doctors/:doctorId/availability', () => HttpResponse.json([])));
 
     const user = await goToAvailability();
 
@@ -276,11 +233,7 @@ describe('Doctor availability', () => {
 
     await user.click(getAvailableCalendarDay());
 
-    expect(
-      await screen.findByText(
-        'Nenhum horário disponível nesta data.',
-      ),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Nenhum horário disponível nesta data.')).toBeInTheDocument();
   });
 
   it('should focus the heading when entering the availability step', async () => {

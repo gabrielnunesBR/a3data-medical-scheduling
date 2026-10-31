@@ -14,8 +14,7 @@ export function toClinicDate(date: Date): string {
     day: '2-digit',
   }).formatToParts(date);
 
-  const get = (type: string) =>
-    parts.find((part) => part.type === type)?.value;
+  const get = (type: string) => parts.find((part) => part.type === type)?.value;
 
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
@@ -23,12 +22,7 @@ export function toClinicDate(date: Date): string {
 export function fromClinicDate(value: string): Date {
   const [year, month, day] = value.split('-').map(Number);
 
-  return new TZDate(
-    year,
-    month - 1,
-    day,
-    CLINIC_TIME_ZONE,
-  );
+  return new TZDate(year, month - 1, day, CLINIC_TIME_ZONE);
 }
 
 export function formatClinicDate(value: string): string {
@@ -43,30 +37,15 @@ export function formatClinicDate(value: string): string {
   }).format(date);
 }
 
-export function toAppointmentStartAt(
-  date: string,
-  time: string,
-): string {
-  if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-    !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)
-  ) {
+export function toAppointmentStartAt(date: string, time: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
     throw new RangeError('Invalid appointment date or time.');
   }
 
   const [year, month, day] = date.split('-').map(Number);
   const [hours, minutes] = time.split(':').map(Number);
 
-  const start = new TZDate(
-    year,
-    month - 1,
-    day,
-    hours,
-    minutes,
-    0,
-    0,
-    CLINIC_TIME_ZONE,
-  );
+  const start = new TZDate(year, month - 1, day, hours, minutes, 0, 0, CLINIC_TIME_ZONE);
 
   if (
     Number.isNaN(start.getTime()) ||

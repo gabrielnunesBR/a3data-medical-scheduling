@@ -51,14 +51,9 @@ export async function createAppointment(
   });
 
   if (!response.ok) {
-    const errorBody: unknown = await response
-      .json()
-      .catch(() => null);
+    const errorBody: unknown = await response.json().catch(() => null);
 
-    throw new AppointmentRequestError(
-      response.status,
-      getErrorCode(errorBody),
-    );
+    throw new AppointmentRequestError(response.status, getErrorCode(errorBody));
   }
 
   return response.json() as Promise<Appointment>;

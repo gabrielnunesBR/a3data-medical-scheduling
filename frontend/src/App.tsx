@@ -1,28 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 
-import {
-  CalendarDays,
-  ChevronLeft,
-  ScanLine,
-  Search,
-  ShieldCheck,
-} from 'lucide-react';
+import { CalendarDays, ChevronLeft, ScanLine, Search, ShieldCheck } from 'lucide-react';
 
 import { BookingProgress } from './components/booking-progress';
 import type { Doctor } from './features/booking/availability.api';
 import type { Appointment } from './features/booking/appointments.api';
-import {
-  formatClinicDate,
-} from './features/booking/booking-dates';
-import {
-  BookingConfirmation,
-} from './features/booking/booking-confirmation';
-import {
-  BookingSuccess,
-} from './features/booking/booking-success';
-import {
-  DoctorAvailability,
-} from './features/booking/doctor-availability';
+import { formatClinicDate } from './features/booking/booking-dates';
+import { BookingConfirmation } from './features/booking/booking-confirmation';
+import { BookingSuccess } from './features/booking/booking-success';
+import { DoctorAvailability } from './features/booking/doctor-availability';
 import { ExamSearch } from './features/exams/exam-search';
 import type { Exam } from './features/exams/exams.api';
 
@@ -36,19 +22,18 @@ function App() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
 
-  const [confirmedAppointment, setConfirmedAppointment] =
-    useState<Appointment | null>(null);
+  const [confirmedAppointment, setConfirmedAppointment] = useState<Appointment | null>(null);
 
-  const [availabilityNotice, setAvailabilityNotice] =
-    useState<string | null>(null);
+  const [availabilityNotice, setAvailabilityNotice] = useState<string | null>(null);
 
-  const initialRenderRef = useRef(true);
+  const previousStepRef = useRef<BookingStep>(currentStep);
 
   useEffect(() => {
-    if (initialRenderRef.current) {
-      initialRenderRef.current = false;
+    if (previousStepRef.current === currentStep) {
       return;
     }
+
+    previousStepRef.current = currentStep;
 
     document.getElementById('booking-step-heading')?.focus();
   }, [currentStep]);
@@ -124,13 +109,9 @@ function App() {
             </div>
 
             <div>
-              <p className="text-base font-bold tracking-tight">
-                Agendamento de exames
-              </p>
+              <p className="text-base font-bold tracking-tight">Agendamento de exames</p>
 
-              <p className="text-xs text-muted-ink">
-                Exames de imagem
-              </p>
+              <p className="text-xs text-muted-ink">Exames de imagem</p>
             </div>
           </div>
 
@@ -141,22 +122,17 @@ function App() {
         </div>
       </header>
 
-      <main
-        id="conteudo-principal"
-        className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14"
-      >
+      <main id="conteudo-principal" className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
         <div className="mb-9 max-w-2xl">
-          <p className="mb-3 text-sm font-semibold text-brand-strong">
-            AGENDAMENTO ONLINE
-          </p>
+          <p className="mb-3 text-sm font-semibold text-brand-strong">AGENDAMENTO ONLINE</p>
 
           <h1 className="text-3xl font-bold tracking-tight text-ink sm:text-4xl">
             Agende seu exame com facilidade
           </h1>
 
           <p className="mt-4 text-base leading-7 text-muted-ink">
-            Escolha o exame, encontre um horário disponível
-            e confirme seu agendamento em poucos passos.
+            Escolha o exame, encontre um horário disponível e confirme seu agendamento em poucos
+            passos.
           </p>
         </div>
 
@@ -171,17 +147,9 @@ function App() {
             aria-labelledby="booking-step-heading"
             className="rounded-2xl border border-line bg-surface p-5 shadow-sm sm:p-8"
           >
-            {currentStep !== 'success' && (
-              <BookingProgress currentStep={currentStep} />
-            )}
+            {currentStep !== 'success' && <BookingProgress currentStep={currentStep} />}
 
-            <div
-              className={
-                currentStep === 'success'
-                  ? ''
-                  : 'mt-9 border-t border-line pt-8'
-              }
-            >
+            <div className={currentStep === 'success' ? '' : 'mt-9 border-t border-line pt-8'}>
               {currentStep === 1 && (
                 <>
                   <div className="flex items-start gap-3">
@@ -199,8 +167,7 @@ function App() {
                       </h2>
 
                       <p className="mt-2 text-sm leading-6 text-muted-ink">
-                        Encontre o procedimento pelo nome
-                        e selecione uma opção para continuar.
+                        Encontre o procedimento pelo nome e selecione uma opção para continuar.
                       </p>
                     </div>
                   </div>
@@ -249,8 +216,7 @@ function App() {
                       </h2>
 
                       <p className="mt-2 text-sm leading-6 text-muted-ink">
-                        Confira a agenda do profissional e
-                        escolha um horário disponível.
+                        Confira a agenda do profissional e escolha um horário disponível.
                       </p>
                     </div>
                   </div>
@@ -330,19 +296,14 @@ function App() {
                   <CalendarDays size={20} aria-hidden="true" />
                 </div>
 
-                <h2
-                  id="summary-heading"
-                  className="text-lg font-semibold"
-                >
+                <h2 id="summary-heading" className="text-lg font-semibold">
                   Seu agendamento
                 </h2>
               </div>
 
               <dl className="mt-6 divide-y divide-line">
                 <div className="py-4">
-                  <dt className="text-sm text-muted-ink">
-                    Exame
-                  </dt>
+                  <dt className="text-sm text-muted-ink">Exame</dt>
 
                   <dd className="mt-1 font-medium text-ink">
                     {selectedExam?.name ?? 'Não selecionado'}
@@ -356,9 +317,7 @@ function App() {
                 </div>
 
                 <div className="py-4">
-                  <dt className="text-sm text-muted-ink">
-                    Profissional
-                  </dt>
+                  <dt className="text-sm text-muted-ink">Profissional</dt>
 
                   <dd className="mt-1 font-medium text-ink">
                     {selectedDoctor?.name ?? 'Não selecionado'}
@@ -366,14 +325,10 @@ function App() {
                 </div>
 
                 <div className="py-4">
-                  <dt className="text-sm text-muted-ink">
-                    Data e horário
-                  </dt>
+                  <dt className="text-sm text-muted-ink">Data e horário</dt>
 
                   <dd className="mt-1 font-medium text-ink">
-                    {selectedDate
-                      ? formatClinicDate(selectedDate)
-                      : 'Não selecionados'}
+                    {selectedDate ? formatClinicDate(selectedDate) : 'Não selecionados'}
 
                     {selectedTime && (
                       <span className="mt-1 block text-sm font-semibold text-brand-strong">

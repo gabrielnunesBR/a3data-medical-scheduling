@@ -4,10 +4,7 @@ export type Exam = {
   durationMinutes: number;
 };
 
-export async function fetchExams(
-  search: string,
-  signal?: AbortSignal,
-): Promise<Exam[]> {
+export async function fetchExams(search: string, signal?: AbortSignal): Promise<Exam[]> {
   const params = new URLSearchParams();
 
   if (search) {
@@ -16,9 +13,7 @@ export async function fetchExams(
 
   const query = params.toString();
 
-  const url = query
-    ? `/api/exams?${query}`
-    : '/api/exams';
+  const url = query ? `/api/exams?${query}` : '/api/exams';
 
   const response = await fetch(url, { signal });
 

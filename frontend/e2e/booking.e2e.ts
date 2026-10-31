@@ -1,10 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { TZDate } from 'react-day-picker';
 
-import {
-  CLINIC_TIME_ZONE,
-  toClinicDate,
-} from '../src/features/booking/booking-dates.js';
+import { CLINIC_TIME_ZONE, toClinicDate } from '../src/features/booking/booking-dates.js';
 
 type Exam = {
   id: number;
@@ -30,13 +27,9 @@ function getFutureMonday(): string {
   return toClinicDate(date);
 }
 
-async function selectCalendarDate(
-  page: Page,
-  date: string,
-): Promise<void> {
+async function selectCalendarDate(page: Page, date: string): Promise<void> {
   const day = page.locator(
-    `.booking-calendar .rdp-day[data-day="${date}"]` +
-      ':not(.rdp-outside) .rdp-day_button',
+    `.booking-calendar .rdp-day[data-day="${date}"]` + ':not(.rdp-outside) .rdp-day_button',
   );
 
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -45,18 +38,13 @@ async function selectCalendarDate(
       return;
     }
 
-    await page
-      .locator('.booking-calendar .rdp-button_next')
-      .click();
+    await page.locator('.booking-calendar .rdp-button_next').click();
   }
 
   throw new Error(`Could not select calendar date: ${date}`);
 }
 
-test('patient can select exam, doctor, date and time', async ({
-  page,
-  request,
-}) => {
+test('patient can select exam, doctor, date and time', async ({ page, request }) => {
   const examsResponse = await request.get('/api/exams');
   const doctorsResponse = await request.get('/api/doctors');
 
@@ -68,14 +56,10 @@ test('patient can select exam, doctor, date and time', async ({
 
   const exam = exams.find((item) => item.id === 17);
 
-  const doctor = doctors.find(
-    (item) => item.crm === 'CRM-MG 11111',
-  );
+  const doctor = doctors.find((item) => item.crm === 'CRM-MG 11111');
 
   if (!exam || !doctor) {
-    throw new Error(
-      'Exam and doctor seeds must exist in the test database.',
-    );
+    throw new Error('Exam and doctor seeds must exist in the test database.');
   }
 
   expect(exam.durationMinutes).toBe(40);
@@ -88,10 +72,7 @@ test('patient can select exam, doctor, date and time', async ({
     }),
   ).toBeVisible();
 
-  const examButton = page
-    .getByRole('button')
-    .filter({ hasText: exam.name })
-    .first();
+  const examButton = page.getByRole('button').filter({ hasText: exam.name }).first();
 
   await examButton.click();
 

@@ -4,11 +4,7 @@ import { CalendarDays, Check, Clock3 } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { ptBR } from 'react-day-picker/locale';
 
-import {
-  fetchAvailability,
-  fetchDoctors,
-  type Doctor,
-} from './availability.api';
+import { fetchAvailability, fetchDoctors, type Doctor } from './availability.api';
 import {
   CLINIC_TIME_ZONE,
   formatClinicDate,
@@ -75,23 +71,11 @@ export function DoctorAvailability({
   useEffect(() => {
     if (
       time &&
-      (
-        slotsError ||
-        (!slotsPending &&
-          !slotsFetching &&
-          !availableSlots.includes(time))
-      )
+      (slotsError || (!slotsPending && !slotsFetching && !availableSlots.includes(time)))
     ) {
       onTimeChange(null);
     }
-  }, [
-    time,
-    slotsError,
-    slotsPending,
-    slotsFetching,
-    availableSlots,
-    onTimeChange,
-  ]);
+  }, [time, slotsError, slotsPending, slotsFetching, availableSlots, onTimeChange]);
 
   const today = todayInClinic();
   const loadingSlots = slotsPending || slotsFetching;
@@ -99,10 +83,7 @@ export function DoctorAvailability({
   return (
     <div className="mt-7 space-y-8">
       <div>
-        <label
-          htmlFor="booking-doctor"
-          className="block text-sm font-semibold text-ink"
-        >
+        <label htmlFor="booking-doctor" className="block text-sm font-semibold text-ink">
           Profissional
         </label>
 
@@ -111,9 +92,7 @@ export function DoctorAvailability({
           value={doctor?.id ?? ''}
           disabled={doctorsPending || doctorsError}
           onChange={(event) => {
-            const selected = doctors.find(
-              (item) => item.id === Number(event.target.value),
-            );
+            const selected = doctors.find((item) => item.id === Number(event.target.value));
 
             onDoctorChange(selected ?? null);
           }}
@@ -124,9 +103,7 @@ export function DoctorAvailability({
           disabled:bg-slate-50"
         >
           <option value="">
-            {doctorsPending
-              ? 'Carregando profissionais...'
-              : 'Selecione um profissional'}
+            {doctorsPending ? 'Carregando profissionais...' : 'Selecione um profissional'}
           </option>
 
           {doctors.map((item) => (
@@ -138,9 +115,7 @@ export function DoctorAvailability({
 
         {doctorsError && (
           <div role="alert" className="mt-3 text-sm">
-            <p className="text-danger">
-              Não foi possível carregar os profissionais.
-            </p>
+            <p className="text-danger">Não foi possível carregar os profissionais.</p>
 
             <button
               type="button"
@@ -155,32 +130,28 @@ export function DoctorAvailability({
       </div>
 
       {!doctor ? (
-        <div className="rounded-xl border border-line
+        <div
+          className="rounded-xl border border-line
           bg-canvas p-6 text-center text-sm
-          text-muted-ink">
-          Selecione um profissional para escolher
-          a data do atendimento.
+          text-muted-ink"
+        >
+          Selecione um profissional para escolher a data do atendimento.
         </div>
       ) : (
         <>
           <section aria-labelledby="booking-date-heading">
             <div className="mb-4 flex items-center gap-2">
-              <CalendarDays
-                size={20}
-                className="text-brand-strong"
-                aria-hidden="true"
-              />
+              <CalendarDays size={20} className="text-brand-strong" aria-hidden="true" />
 
-              <h3
-                id="booking-date-heading"
-                className="text-base font-semibold text-ink"
-              >
+              <h3 id="booking-date-heading" className="text-base font-semibold text-ink">
                 Data do exame
               </h3>
             </div>
 
-            <div className="overflow-x-auto rounded-xl border
-            border-line bg-white p-3 sm:p-5">
+            <div
+              className="overflow-x-auto rounded-xl border
+            border-line bg-white p-3 sm:p-5"
+            >
               <div className="mx-auto w-max">
                 <DayPicker
                   mode="single"
@@ -191,13 +162,9 @@ export function DoctorAvailability({
                   today={today}
                   startMonth={today}
                   disabled={{ before: today }}
-                  selected={
-                    date ? fromClinicDate(date) : undefined
-                  }
+                  selected={date ? fromClinicDate(date) : undefined}
                   onSelect={(selected) => {
-                    onDateChange(
-                      selected ? toClinicDate(selected) : null,
-                    );
+                    onDateChange(selected ? toClinicDate(selected) : null);
                   }}
                   className="booking-calendar"
                 />
@@ -213,30 +180,23 @@ export function DoctorAvailability({
 
           <section aria-labelledby="booking-times-heading">
             <div className="mb-4 flex items-center gap-2">
-              <Clock3
-                size={20}
-                className="text-brand-strong"
-                aria-hidden="true"
-              />
+              <Clock3 size={20} className="text-brand-strong" aria-hidden="true" />
 
-              <h3
-                id="booking-times-heading"
-                className="text-base font-semibold text-ink"
-              >
+              <h3 id="booking-times-heading" className="text-base font-semibold text-ink">
                 Horários disponíveis
               </h3>
             </div>
 
             {!date ? (
-              <p className="rounded-xl bg-canvas p-5
-                text-sm text-muted-ink">
+              <p
+                className="rounded-xl bg-canvas p-5
+                text-sm text-muted-ink"
+              >
                 Escolha uma data para consultar os horários.
               </p>
             ) : loadingSlots ? (
               <div role="status" className="space-y-3">
-                <p className="text-sm text-muted-ink">
-                  Consultando disponibilidade...
-                </p>
+                <p className="text-sm text-muted-ink">Consultando disponibilidade...</p>
 
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {Array.from({ length: 8 }, (_, index) => (
@@ -250,8 +210,11 @@ export function DoctorAvailability({
                 </div>
               </div>
             ) : slotsError ? (
-              <div role="alert" className="rounded-xl border
-                border-red-200 bg-red-50 p-5">
+              <div
+                role="alert"
+                className="rounded-xl border
+                border-red-200 bg-red-50 p-5"
+              >
                 <p className="text-sm font-medium text-danger">
                   Não foi possível consultar os horários.
                 </p>
@@ -266,15 +229,14 @@ export function DoctorAvailability({
                 </button>
               </div>
             ) : availableSlots.length === 0 ? (
-              <div role="status" className="rounded-xl border
-                border-line bg-canvas p-5">
-                <p className="font-medium text-ink">
-                  Nenhum horário disponível nesta data.
-                </p>
+              <div
+                role="status"
+                className="rounded-xl border
+                border-line bg-canvas p-5"
+              >
+                <p className="font-medium text-ink">Nenhum horário disponível nesta data.</p>
 
-                <p className="mt-2 text-sm text-muted-ink">
-                  Escolha outra data ou profissional.
-                </p>
+                <p className="mt-2 text-sm text-muted-ink">Escolha outra data ou profissional.</p>
               </div>
             ) : (
               <div
@@ -304,9 +266,7 @@ export function DoctorAvailability({
                           : 'border-line bg-white text-ink hover:border-brand',
                       ].join(' ')}
                     >
-                      {selected && (
-                        <Check size={16} aria-hidden="true" />
-                      )}
+                      {selected && <Check size={16} aria-hidden="true" />}
 
                       {slot}
                     </button>
@@ -316,10 +276,7 @@ export function DoctorAvailability({
             )}
 
             {time && !slotsError && !loadingSlots && (
-              <p
-                role="status"
-                className="mt-4 text-sm font-medium text-brand-strong"
-              >
+              <p role="status" className="mt-4 text-sm font-medium text-brand-strong">
                 Horário selecionado: {time}
               </p>
             )}
