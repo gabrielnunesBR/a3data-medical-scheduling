@@ -264,6 +264,12 @@ test('creates an appointment and persists it in PostgreSQL', async ({ page, requ
     }),
   ).toBeVisible();
 
+  await expect(
+    page.getByRole('heading', {
+      name: 'Agendamento confirmado!',
+    }),
+  ).toBeFocused();
+
   await expect(page.getByText(patientName)).toBeVisible();
   await expectAccessiblePage(page);
   await expectNoHorizontalOverflowAtWidths(page, 'success');
@@ -353,6 +359,12 @@ test('handles a real HTTP 409 and refreshes available slots', async ({ page, req
       name: 'Escolha o médico, a data e o horário',
     }),
   ).toBeVisible();
+
+  await expect(
+    page.getByRole('heading', {
+      name: 'Escolha o médico, a data e o horário',
+    }),
+  ).toBeFocused();
 
   await expect(
     page.getByRole('button', {
@@ -449,4 +461,59 @@ test('recovers a lost response without duplicating the appointment', async ({ pa
   );
 
   expect(finallySaved.rows).toEqual([{ id: originalId }]);
+});
+
+test('keeps focus on active steps and supports keyboard navigation', async ({ page, request }) => {
+  const fixture = await getBookingFixture(request);
+
+  await goToConfirmation(page, fixture, async (step) => {
+    if (step === 'schedule') {
+      await expect(
+        page.getByRole('heading', {
+          name: 'Escolha o médico, a data e o horário',
+        }),
+      ).toBeFocused();
+    }
+
+    if (step === 'confirmation') {
+      await expect(
+        page.getByRole('heading', {
+          name: 'Revise e confirme seu agendamento',
+        }),
+      ).toBeFocused();
+    }
+  });
+
+  const patientName = page.getByRole('textbox', {
+    name: 'Nome completo do paciente',
+  });
+
+  // O primeiro Tab deve levar o foco do título ao campo do paciente.
+  await page.keyboard.press('Tab');
+
+  await expect(patientName).toBeFocused();
+
+  // Preenchimento utilizando somente o teclado.
+  await page.keyboard.type('Paciente Teste Teclado');
+
+  await expect(patientName).toHaveValue('Paciente Teste Teclado');
+
+  // O próximo Tab deve levar o foco ao botão Voltar.
+  await page.keyboard.press('Tab');
+
+  await expect(
+    page.getByRole('button', {
+      name: 'Voltar',
+      exact: true,
+    }),
+  ).toBeFocused();
+
+  // O próximo Tab deve alcançar o botão de confirmação.
+  await page.keyboard.press('Tab');
+
+  await expect(
+    page.getByRole('button', {
+      name: 'Confirmar agendamento',
+    }),
+  ).toBeFocused();
 });
