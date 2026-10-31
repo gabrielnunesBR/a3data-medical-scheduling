@@ -4,17 +4,39 @@ Aplicação full-stack desenvolvida para o desafio técnico da **A3Data**. Permi
 
 O fluxo principal está implementado no **backend NestJS** e no **frontend React**, com testes unitários, de integração HTTP e de ponta a ponta em navegador real.
 
+## Visão da aplicação
+
+### Desktop — seleção de médico, data e horário
+
+![Interface desktop com seleção de médico, calendário e horários de agendamento](docs/screenshots/app-desktop-booking.png)
+
+### Mobile — revisão e confirmação
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <img src="docs/screenshots/app-mobile-review.png" width="260" alt="Revisão do agendamento no mobile">
+    </td>
+    <td align="center" valign="top" width="50%">
+      <img src="docs/screenshots/app-mobile-success.png" width="260" alt="Confirmação do agendamento no mobile">
+    </td>
+  </tr>
+</table>
+
+As capturas mostram a jornada de agendamento em diferentes tamanhos de tela.
+
 ## Tecnologias
 
 | Camada | Tecnologias |
 | --- | --- |
-| Backend | Node.js 24, NestJS, TypeScript, TypeORM |
+| Backend | Node.js 24, NestJS, TypeScript, TypeORM, OpenAPI/Swagger |
 | Banco de dados | PostgreSQL 17 |
 | Validação e datas | Zod, Luxon |
 | Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query, React Hook Form, React DayPicker |
 | Testes do backend | Vitest, Supertest |
 | Testes do frontend | Vitest, React Testing Library, MSW, Playwright (Chromium), axe-core |
-| Infraestrutura | Docker Compose, npm Workspaces |
+| Infraestrutura | Docker Compose, npm Workspaces, GitHub Actions |
+| Documentação e observabilidade | Swagger UI, coleção Postman/Insomnia, logs JSON e Request ID |
 
 ## Arquitetura e decisões técnicas
 
@@ -27,6 +49,9 @@ O projeto utiliza um **monorepo com npm Workspaces**, separando a API NestJS (`b
 - **TypeORM:** mapeamento das entidades e evolução do schema por migrations, mantendo `synchronize: false`.
 - **Zod:** validação dos dados recebidos pela API.
 - **Luxon:** tratamento de instantes, datas e fuso horário da clínica.
+- **OpenAPI/Swagger:** contratos HTTP derivados dos schemas Zod e complementados com respostas, descrições e exemplos.
+- **Observabilidade básica:** logs HTTP estruturados em JSON, `X-Request-ID` por requisição e sanitização de exceções inesperadas.
+- **Health check:** consulta `SELECT 1` ao PostgreSQL, com retorno `503` quando a verificação falha após a aplicação estar iniciada.
 
 ### Frontend
 
@@ -58,6 +83,9 @@ O fluxo é dividido em seleção de exame, escolha de médico/data/horário, rev
 - Fluxo web responsivo em **português brasileiro**, com revisão e confirmação do agendamento.
 - Limitação de requisições ao endpoint público de criação de agendamentos.
 - Suporte a chaves de idempotência para recuperar reservas já confirmadas sem duplicá-las.
+- Endpoint de saúde da API com verificação de conectividade do PostgreSQL.
+- Documentação interativa Swagger e coleção de requisições Postman/Insomnia.
+- Logs HTTP estruturados e identificação de requisições para diagnóstico.
 
 ## Estrutura do projeto
 
@@ -70,7 +98,13 @@ a3data-medical-scheduling/
 │       ├── exames.csv
 │       └── medicos.md
 ├── docs/
-│   └── ux-ui-decisions.md  # Diretrizes e decisões de design
+│   ├── ux-ui-decisions.md   # Diretrizes e decisões de design
+│   ├── postman/
+│   │   └── medical-scheduling.postman_collection.json  # Coleção importável
+│   └── screenshots/
+│       ├── app-desktop-booking.png
+│       ├── app-mobile-review.png
+│       └── app-mobile-success.png
 ├── compose.yaml             # PostgreSQL de desenvolvimento e de testes
 ├── .env.example
 ├── .env.test.example
@@ -185,14 +219,38 @@ npm run build --workspace=frontend
 | `GET` | `/api/doctors` | Listar médicos |
 | `GET` | `/api/doctors/:id/availability?examId=...&date=...` | Consultar horários disponíveis |
 | `POST` | `/api/appointments` | Confirmar um agendamento |
+| `GET` | `/api/health` | Verificar conectividade da API com o PostgreSQL |
+
+### Swagger / OpenAPI
+
+Com a API em execução, a documentação interativa e a especificação ficam disponíveis em:
+
+- **Swagger UI:** `http://localhost:3000/api/docs`
+- **OpenAPI JSON:** `http://localhost:3000/api/openapi.json`
+
+Os schemas de entrada são derivados das validações Zod. O `Idempotency-Key` é opcional, e os exemplos de agendamento são ilustrativos: consulte a disponibilidade antes de executar um `POST`. A especificação é verificada por um teste E2E de contrato (`backend/test/openapi.e2e-spec.ts`).
+
+### Coleção Postman / Insomnia
+
+A coleção pronta para importação está em [`docs/postman/medical-scheduling.postman_collection.json`](docs/postman/medical-scheduling.postman_collection.json). Ela inclui os cinco endpoints, uma requisição adicional de busca de exames, variáveis reutilizáveis e verificações básicas de resposta.
+
+Importe o JSON no Postman ou Insomnia, inicie a API local e consulte **Exames**, **Médicos** e **Disponibilidade** antes de executar **Criar agendamento**. No `POST`, preencha `startAt` com um horário ISO 8601 válido, conforme a disponibilidade retornada; o horário não é preenchido automaticamente pela consulta. O header `Idempotency-Key` é opcional e deve usar um novo UUID para cada nova operação. **Executar o POST grava uma reserva real no banco configurado.**
+
+### Health check
+
+```bash
+curl -i "http://localhost:3000/api/health"
+```
+
+Com o PostgreSQL acessível, a API retorna `200 OK` e `{"status":"ok"}`. Se uma consulta ao banco falhar enquanto a API estiver em execução, retorna `503 Service Unavailable` com uma mensagem genérica e o header `X-Request-ID`. Como o TypeORM conecta durante o bootstrap, uma falha de banco antes da inicialização pode impedir que a aplicação suba; nesse caso não haverá endpoint disponível para responder.
 
 ### Buscar exames
 
 ```bash
-curl "http://localhost:3000/api/exams?search=ressonancia"
+curl "http://localhost:3000/api/exams?search=Resson%C3%A2ncia"
 ```
 
-O parâmetro `search` é opcional. Sem ele, a API retorna o catálogo de exames.
+O parâmetro `search` é opcional. Sem ele, a API retorna o catálogo de exames. Os registros são apresentados em ordem alfabética pelo nome; os IDs originais são preservados. A busca é feita por nome, com correspondência sem diferenciar maiúsculas de minúsculas, mas sem garantir remoção de acentos.
 
 ### Listar médicos
 
@@ -200,7 +258,7 @@ O parâmetro `search` é opcional. Sem ele, a API retorna o catálogo de exames.
 curl "http://localhost:3000/api/doctors"
 ```
 
-A resposta contém os identificadores dos médicos, necessários para consultar disponibilidade e criar agendamentos.
+A resposta contém os identificadores dos médicos, necessários para consultar disponibilidade e criar agendamentos. Os médicos são listados em ordem alfabética por nome.
 
 ### Consultar disponibilidade
 
@@ -231,7 +289,7 @@ Exemplo **ilustrativo** de resposta para um turno das 08h às 12h e um exame de 
 
 A API retorna horários no formato `HH:mm`, considerando a duração do exame, os turnos do médico, os agendamentos existentes e o instante atual. Quando não há horários disponíveis, retorna `200 OK` com `[]`.
 
-**Fuso horário da clínica:** `America/Sao_Paulo` (horário de Brasília).
+**Fuso horário da clínica:** `America/Sao_Paulo` (horário de Brasília). Os horários livres são exibidos em `HH:mm` no horário da clínica, em ordem cronológica; não são timestamps UTC.
 
 ### Criar agendamento
 
@@ -253,7 +311,9 @@ curl -i -X POST "http://localhost:3000/api/appointments" \
 | `doctorId` | Identificador do médico |
 | `startAt` | Data e hora ISO 8601 com fuso explícito (`-03:00` ou `Z`) |
 
-O horário de término (`endAt`) é calculado **no backend** a partir da duração cadastrada para o exame. Em caso de sucesso, a API retorna `201 Created`, incluindo o ID da reserva, os dados do agendamento e a data de criação. Os instantes podem ser serializados em UTC.
+O horário de término (`endAt`) é calculado **no backend** a partir da duração cadastrada para o exame. Em caso de sucesso, a API retorna `201 Created`, incluindo o ID da reserva, os dados do agendamento e a data de criação. Os instantes são serializados em UTC (`Z`); por exemplo, `08:00-03:00` corresponde a `11:00Z` no mesmo dia.
+
+**Importante:** o payload acima é ilustrativo. Antes de criar uma reserva, consulte os horários disponíveis para o médico, exame e data escolhidos. Uma data válida no formato ISO não garante um horário livre.
 
 A requisição também aceita o header opcional `Idempotency-Key`, detalhado a seguir.
 
@@ -335,11 +395,23 @@ EXCLUDE USING GIST (
 )
 ```
 
-Ela impede que duas requisições concorrentes confirmem horários conflitantes para o mesmo médico. O PostgreSQL retorna SQLSTATE `23P01` quando a restrição é violada, e a API converte o erro em `409 Conflict`.
+Ela impede que duas requisições concorrentes confirmem horários conflitantes para o mesmo médico. O PostgreSQL retorna SQLSTATE `23P01` quando a restrição é violada, e a API converte o erro em `409 Conflict`. Um deadlock detectado durante a tentativa de reserva (`40P01`) também é tratado como `409 Conflict`, sem confirmar a operação. Nesse caso, o cliente deve consultar novamente a disponibilidade antes de tentar outra reserva; não há retry automático da transação.
 
 A tabela também possui `CHECK (start_at < end_at)`, impedindo intervalos com duração nula ou negativa.
 
 ## Segurança e confiabilidade
+
+### Logs estruturados, Request ID e exceções seguras
+
+A API produz logs HTTP em JSON, com método, padrão de rota, status de resposta, duração e identificador `requestId`. O mesmo UUID gerado pelo servidor é devolvido no header `X-Request-ID`, inclusive em respostas HTTP de erro. IDs enviados pelo cliente não são utilizados como identificadores confiáveis.
+
+```bash
+curl -i "http://localhost:3000/api/health"
+```
+
+A instrumentação HTTP não registra o corpo das requisições, parâmetros de URL completos, headers de autenticação ou nomes dos pacientes. O filtro global preserva respostas de erro HTTP esperadas (como 400, 409 e 422) e, para exceções inesperadas, registra somente o `requestId` e uma categoria genérica; a resposta permanece `500 Internal server error`. Isso evita que SQL, parâmetros da consulta e stack traces dessas exceções sejam registrados pelo tratamento HTTP padrão.
+
+Essa medida **não representa uma auditoria de todos os logs de dependências ou da inicialização da aplicação**. Em produção, seriam necessários controles adicionais de retenção, acesso e tratamento de dados pessoais.
 
 ### Cabeçalhos HTTP de segurança
 
@@ -413,9 +485,7 @@ npm run test --workspace=frontend -- --run
 
 #### Cobertura de testes do backend
 
-O projeto utiliza Vitest com o provedor V8 para medir a cobertura das regras críticas de disponibilidade e agendamento.
-
-Execute na raiz do repositório:
+É possível medir a cobertura das regras centrais de disponibilidade e agendamento usando Vitest e o provedor V8:
 
 ```bash
 npm run test --workspace=backend -- \
@@ -429,9 +499,7 @@ npm run test --workspace=backend -- \
   --coverage.reporter=html
 ```
 
-O relatório HTML é gerado em `backend/coverage/` e não é versionado.
-
-Esta medição considera os testes unitários do Vitest. Os testes E2E HTTP com PostgreSQL são executados separadamente e não são automaticamente somados aos percentuais de cobertura.
+O relatório HTML é gerado em `backend/coverage/` e não é versionado. Essa medição considera os testes unitários; os E2E HTTP com PostgreSQL são executados separadamente e não são automaticamente incluídos nesses percentuais.
 
 ### 3. Testes E2E da API
 
@@ -447,9 +515,9 @@ NODE_ENV=test npm exec --workspace=backend -- vitest run \
   test/appointments-concurrency.e2e-spec.ts
 ```
 
-Entre os cenários cobertos estão requisições concorrentes para o mesmo horário, sobreposições com durações diferentes, horários consecutivos, atendimentos simultâneos por médicos diferentes e a restrição `23P01` do PostgreSQL.
+Entre os cenários cobertos estão requisições concorrentes para o mesmo horário, sobreposições com durações diferentes, horários consecutivos, atendimentos simultâneos por médicos diferentes, a restrição `23P01` e o tratamento de deadlocks `40P01` do PostgreSQL.
 
-Os testes HTTP também cobrem idempotência, reaproveitamento de chaves e rate limiting. Os testes de cabeçalhos de segurança verificam as respostas `200`, `400` e `404`.
+Os testes HTTP também cobrem idempotência, reaproveitamento de chaves, rate limiting, Request ID e o contrato OpenAPI dos cinco endpoints. Os testes de cabeçalhos de segurança verificam as respostas `200`, `400` e `404`. Testes específicos verificam o health check (200/503), a classificação dos logs e a sanitização de exceções inesperadas.
 
 ### 4. Testes E2E no navegador
 
@@ -490,32 +558,12 @@ O projeto compartilha uma configuração do Prettier para padronizar código no 
 
 ## Integração contínua
 
-O projeto utiliza GitHub Actions para executar automaticamente as verificações de qualidade e os testes da aplicação.
+O workflow `.github/workflows/ci.yml` é executado em pushes e pull requests da branch `main`, além de permitir execução manual. Há dois jobs:
 
-O workflow está definido em `.github/workflows/ci.yml` e é acionado em pushes para a branch `main`, pull requests direcionados à `main` e execuções manuais.
+- **Quality and unit tests:** `npm ci`, Prettier, Oxlint, verificação de tipos TypeScript, testes unitários do backend e frontend e build das duas aplicações.
+- **PostgreSQL integration tests:** serviço PostgreSQL 17 temporário, migrations, seeds, E2E HTTP (incluindo o contrato OpenAPI), Chromium e testes Playwright com verificações de acessibilidade.
 
-### Quality and unit tests
-
-- Instalação reproduzível com `npm ci`.
-- Verificação de formatação com Prettier.
-- Análise estática com Oxlint.
-- Verificação de tipos TypeScript.
-- Testes unitários do backend.
-- Testes de componentes do frontend.
-- Build do NestJS e React.
-
-### PostgreSQL integration tests
-
-- Inicialização de PostgreSQL 17 temporário.
-- Execução das migrations e seeds.
-- Testes E2E HTTP com Vitest e Supertest.
-- Instalação do Chromium.
-- Testes E2E com Playwright.
-- Verificações de acessibilidade com axe-core.
-
-Em caso de falhas no Playwright, o workflow disponibiliza relatórios e arquivos de diagnóstico como artifacts.
-
-O banco utilizado pelo CI é temporário e isolado. Não são necessárias credenciais de produção ou serviços externos para executar as suítes automatizadas.
+O ambiente do CI utiliza banco isolado e não requer credenciais de produção ou serviços externos. Em caso de falha no Playwright, relatórios e traces são disponibilizados como artifacts por tempo limitado.
 
 ## Comandos úteis
 
@@ -554,11 +602,13 @@ O rate limiting utiliza armazenamento em memória. Em uma implantação com múl
 
 A idempotência é persistida no PostgreSQL, mas o frontend mantém as chaves apenas em memória: após recarregar a página, não é possível reutilizar a chave anterior pelo navegador. A garantia no backend também depende da permanência do agendamento associado à chave.
 
-Também seriam necessários HTTPS, gestão de segredos, monitoramento, observabilidade, políticas de backup e recuperação e avaliações adicionais de segurança e acessibilidade.
+Também seriam necessários HTTPS, gestão de segredos, coleta e retenção centralizada dos logs, alertas, políticas de backup e recuperação e avaliações adicionais de segurança e acessibilidade. Os logs JSON e o health check atuais são uma base de observabilidade, não uma solução de operação em produção.
 
 ### Possíveis evoluções
 
-Uma evolução natural seria incluir autenticação de pacientes e gerenciamento de reservas (consulta, cancelamento e reagendamento), seguida de exceções nas agendas e notificações. Essas funcionalidades não foram implementadas por não serem necessárias aos requisitos solicitados.
+Uma evolução natural seria incluir autenticação de pacientes e gerenciamento de reservas (consulta, cancelamento e reagendamento), seguida de exceções nas agendas, notificações, painel administrativo e políticas de privacidade adequadas ao uso com pacientes reais.
+
+Para uma implantação em produção, avaliaríamos **Sentry** (monitoramento de erros), **OpenTelemetry** (traces e métricas), **Elastic Stack/ELK** (centralização e consulta de logs) e **Redis ou infraestrutura equivalente** para rate limiting compartilhado. Essas integrações não foram adicionadas porque não são necessárias para executar e avaliar o desafio e aumentariam a complexidade operacional.
 
 Os materiais originais do desafio foram preservados em `challenge/`.
 
