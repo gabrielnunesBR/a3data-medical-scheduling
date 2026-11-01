@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react';
 
-import { CalendarDays, ChevronLeft, ScanLine, Search, ShieldCheck } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Search } from 'lucide-react';
 
 import { BookingProgress } from './components/booking-progress';
+import { SiteHeader } from './components/site-header';
 import { formatClinicDate } from './features/booking/booking-dates';
 import { BookingConfirmation } from './features/booking/booking-confirmation';
 import { BookingSuccess } from './features/booking/booking-success';
@@ -50,26 +51,7 @@ function App() {
         Pular para o conteúdo
       </a>
 
-      <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex size-11 items-center justify-center rounded-xl bg-brand text-white">
-              <ScanLine size={24} aria-hidden="true" />
-            </div>
-
-            <div>
-              <p className="text-base font-bold tracking-tight">Agendamento de exames</p>
-
-              <p className="text-xs text-muted-ink">Exames de imagem</p>
-            </div>
-          </div>
-
-          <div className="hidden items-center gap-2 text-sm text-muted-ink sm:flex">
-            <ShieldCheck size={18} aria-hidden="true" />
-            Agendamento online
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main id="conteudo-principal" className="mx-auto max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
         <div className="mb-9 max-w-2xl">

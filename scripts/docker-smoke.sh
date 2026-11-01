@@ -51,6 +51,31 @@ if ! curl --fail --silent --show-error --max-time 10 "$base_url/" | grep -Fq 'id
 fi
 echo 'React frontend was served successfully.'
 
+# Swagger lives below /api/docs, not /docs. Unknown frontend URLs must
+# return 404 while still serving the SPA shell for the branded error page.
+swagger_status="$(curl --location --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 10 "$base_url/api/docs")"
+if [[ "$swagger_status" != '200' ]]; then
+  echo "ERROR: Swagger /api/docs returned HTTP $swagger_status instead of 200." >&2
+  exit 1
+fi
+
+echo 'Swagger /api/docs is accessible.'
+
+for unknown_route in /docs /pagina-inexistente; do
+  not_found_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --max-time 10 "$base_url$unknown_route")"
+  if [[ "$not_found_status" != '404' ]]; then
+    echo "ERROR: Unknown frontend route $unknown_route returned HTTP $not_found_status instead of 404." >&2
+    exit 1
+  fi
+done
+
+if ! curl --silent --show-error --max-time 10 "$base_url/docs" | grep -Fq 'id="root"'; then
+  echo 'ERROR: Unknown frontend route did not serve the React 404 shell.' >&2
+  exit 1
+fi
+
+echo 'Unknown frontend routes correctly return HTTP 404 and the React shell.'
+
 check_reference_data() {
   local endpoint="$1"
   local expected="$2"

@@ -65,6 +65,8 @@ O esperado é `db`, `api` e `web` como **healthy** e `db-init` como **exited (0)
 
 **Agora abra `http://localhost:8080` e faça um agendamento pela interface.** A API não publica a porta `3000` no host: o Nginx encaminha as requisições `/api` pela rede interna do Docker. Para alterar a porta da aplicação, defina `WEB_PORT` no `.env` (por exemplo, `WEB_PORT=8081`). A porta local do banco continua configurável por `POSTGRES_PORT`.
 
+**Rotas:** a interface de agendamento está na raiz (`/`); o Swagger fica em **`/api/docs`**, e não em `/docs`. Endereços desconhecidos, como `/docs`, exibem a página 404 do projeto (com status HTTP `404` no Nginx). As rotas `/api/*` continuam sendo tratadas pela API NestJS.
+
 ### 4. Conferir a execução (smoke test)
 
 Com os containers ativos, execute na raiz do repositório:
@@ -73,7 +75,7 @@ Com os containers ativos, execute na raiz do repositório:
 bash scripts/docker-smoke.sh
 ```
 
-O script verifica a conclusão do `db-init`, o health check da API, a entrega do HTML React pelo Nginx e a presença de **30 exames** e **5 médicos**. Não cria agendamentos. Para executá-lo manualmente, o computador também precisa de Bash, `curl` e Python 3; essas ferramentas não são necessárias apenas para abrir a aplicação pelo Docker. O mesmo smoke test é executado automaticamente no GitHub Actions.
+O script verifica a conclusão do `db-init`, o health check da API, a entrega do HTML React pelo Nginx, o Swagger em `/api/docs`, o HTTP 404 para URLs desconhecidas e a presença de **30 exames** e **5 médicos**. Não cria agendamentos. Para executá-lo manualmente, o computador também precisa de Bash, `curl` e Python 3; essas ferramentas não são necessárias apenas para abrir a aplicação pelo Docker. O mesmo smoke test é executado automaticamente no GitHub Actions.
 
 Se você alterou `WEB_PORT` no `.env`, informe a mesma porta ao smoke test. Por exemplo, para `WEB_PORT=8081`:
 
@@ -140,6 +142,7 @@ As capturas mostram a interface para o paciente e a documentação interativa da
 - Endpoint de saúde da API com verificação de conectividade do PostgreSQL.
 - Documentação interativa Swagger e coleção de requisições Postman/Insomnia.
 - Logs HTTP estruturados e identificação de requisições para diagnóstico.
+- Página 404 responsiva para endereços inválidos, com retorno ao agendamento.
 
 O comprovante pode ser impresso ou salvo como PDF **após a confirmação**, enquanto a tela de sucesso
 estiver aberta. Não há consulta pública de comprovantes por número do agendamento; a aplicação não oferece
@@ -371,7 +374,7 @@ A suíte automatizada cobre **regras de negócio, API, interface e inicializaç�
 | **Componentes — frontend**            | Busca e seleção de exames, escolha de profissional/data/horário, limpeza de seleções dependentes, validação do paciente, tratamento de conflitos e estados de erro, comprovante e ações de calendário.                       |
 | **Integração HTTP — PostgreSQL real** | Endpoints de exames, médicos, disponibilidade e agendamentos; migrations e integridade dos dados; concorrência e exclusão GiST; idempotência, rate limiting, health check, cabeçalhos de segurança e contrato OpenAPI.       |
 | **E2E — Playwright**                  | Jornada de agendamento no Chromium, revisão, confirmação, recuperação de falha de resposta, conflitos `409`, impressão/comprovante, download `.ics`, responsividade, teclado e verificações automatizadas de acessibilidade. |
-| **Smoke test — Docker Compose**       | Build e inicialização do stack, conclusão do `db-init`, health check da API, frontend servido pelo Nginx e presença dos 30 exames e cinco médicos.                                                                           |
+| **Smoke test — Docker Compose**       | Build e inicialização do stack, conclusão do `db-init`, health check da API, frontend servido pelo Nginx Swagger em `/api/docs`, status 404 em `/docs` e presença dos 30 exames e cinco médicos.                             |
 | **Qualidade e CI**                    | Prettier, Oxlint, checagem TypeScript, builds e execução das suítes em três jobs independentes do GitHub Actions.                                                                                                            |
 
 **Cobertura funcional não equivale a percentual de cobertura de linhas ou branches.** O projeto fornece um comando para gerar relatório de cobertura do backend, mas não declara um percentual global sem medição consolidada. Testes automatizados de acessibilidade não substituem uma auditoria manual completa.
