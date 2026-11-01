@@ -4,6 +4,7 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 
@@ -24,6 +25,14 @@ export class AvailabilityController {
     summary: 'Consultar horários disponíveis de um médico',
     description:
       'Os horários seguem o fuso America/Sao_Paulo, respeitam a duração do exame, os turnos e as reservas existentes. Uma agenda vazia retorna 200 com [].',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    type: String,
+    format: 'date',
+    description: 'Data da consulta no formato YYYY-MM-DD (ano-mês-dia).',
+    example: '2030-01-07',
   })
   @ApiOkResponse({
     description: 'Horários disponíveis no formato HH:mm (horário de Brasília).',

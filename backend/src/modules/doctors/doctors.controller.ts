@@ -11,7 +11,8 @@ export class DoctorsController {
   @Get()
   @ApiOperation({ summary: 'Listar médicos disponíveis para agendamento' })
   @ApiOkResponse({
-    description: 'Lista de médicos em ordem alfabética.',
+    description:
+      'Lista de médicos em ordem alfabética. Em workingWeekdays: 1 = segunda-feira, 2 = terça-feira, 3 = quarta-feira, 4 = quinta-feira, 5 = sexta-feira, 6 = sábado e 7 = domingo.',
     schema: {
       type: 'array',
       items: {
