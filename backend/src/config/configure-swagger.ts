@@ -7,7 +7,7 @@ export function configureSwagger(app: INestApplication): void {
     .setDescription(
       'API REST para consulta de exames, médicos, disponibilidade e criação de agendamentos.',
     )
-    .setVersion('1.0.0')
+    .setVersion('0.1.0')
     .build();
 
   const documentFactory = () => {

@@ -127,10 +127,6 @@ test.describe('UI quality', () => {
 
       const diagnostics = await getLayoutDiagnostics(page, viewport.width);
 
-      if (viewport.width === 320 && diagnostics.documentScrollWidth > viewport.width + 1) {
-        console.log('Responsive layout diagnostics:', JSON.stringify(diagnostics, null, 2));
-      }
-
       expect(
         diagnostics.documentScrollWidth,
         JSON.stringify(diagnostics, null, 2),

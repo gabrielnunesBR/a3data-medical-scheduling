@@ -57,7 +57,7 @@ a3data-medical-backend:0.1.0
 a3data-medical-web:0.1.0
 ```
 
-Se quiser identificar outra versão, acrescente `IMAGE_TAG=0.2.0` ao `.env` antes de construir. Essa configuração **identifica as imagens construídas localmente**, sem publicar nada em um registry. Um deploy real utilizaria imagens previamente testadas e publicadas, preferencialmente referenciadas por digest imutável.
+A versão `0.1.0` também identifica o projeto, os workspaces e a documentação OpenAPI. Se quiser identificar outra versão das imagens, acrescente `IMAGE_TAG=0.2.0` ao `.env` antes de construir. Essa variável **altera apenas as tags das imagens construídas localmente**, sem modificar automaticamente a versão do código nem publicar nada em um registry. Um deploy real utilizaria imagens previamente testadas e publicadas, preferencialmente referenciadas por digest imutável.
 
 ### Smoke test Docker
 
@@ -68,6 +68,14 @@ bash scripts/docker-smoke.sh
 ```
 
 O script verifica a conclusão do `db-init`, o health check da API, a entrega do HTML React pelo Nginx e a presença de **30 exames** e **5 médicos**. Não cria agendamentos. Para executá-lo manualmente, o computador também precisa de Bash, `curl` e Python 3; essas ferramentas não são necessárias apenas para abrir a aplicação pelo Docker. O mesmo smoke test é executado automaticamente no GitHub Actions.
+
+Se você alterou `WEB_PORT` no `.env`, informe a mesma porta ao smoke test. Por exemplo, para `WEB_PORT=8081`:
+
+```bash
+SMOKE_BASE_URL=http://127.0.0.1:8081 bash scripts/docker-smoke.sh
+```
+
+O script usa `http://127.0.0.1:8080` por padrão e **não lê automaticamente** `WEB_PORT` do arquivo `.env`.
 
 ### Logs e encerramento
 
@@ -386,7 +394,9 @@ Os schemas de entrada são derivados das validações Zod. O `Idempotency-Key` �
 
 A coleção pronta para importação está em [`docs/postman/medical-scheduling.postman_collection.json`](docs/postman/medical-scheduling.postman_collection.json). Ela inclui os cinco endpoints, uma requisição adicional de busca de exames, variáveis reutilizáveis e verificações básicas de resposta.
 
-Importe o JSON no Postman ou Insomnia, inicie a API local e consulte **Exames**, **Médicos** e **Disponibilidade** antes de executar **Criar agendamento**. No `POST`, preencha `startAt` com um horário ISO 8601 válido, conforme a disponibilidade retornada; o horário não é preenchido automaticamente pela consulta. O header `Idempotency-Key` é opcional e deve usar um novo UUID para cada nova operação. **Executar o POST grava uma reserva real no banco configurado.**
+A coleção usa `baseUrl=http://localhost:8080` por padrão, para funcionar após a instalação com Docker Compose. No desenvolvimento local, com a API executada diretamente, altere a variável `baseUrl` da coleção para `http://localhost:3000`. Se configurou `WEB_PORT` diferente no Docker Compose, ajuste `baseUrl` para essa porta.
+
+Importe o JSON no Postman ou Insomnia e consulte **Exames**, **Médicos** e **Disponibilidade** antes de executar **Criar agendamento**. No `POST`, preencha `startAt` com um horário ISO 8601 válido, conforme a disponibilidade retornada; o horário não é preenchido automaticamente pela consulta. O header `Idempotency-Key` é opcional e deve usar um novo UUID para cada nova operação. **Executar o POST grava uma reserva real no banco configurado.**
 
 ### Health check
 
