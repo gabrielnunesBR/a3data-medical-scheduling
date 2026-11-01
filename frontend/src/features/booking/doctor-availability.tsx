@@ -5,13 +5,8 @@ import { DayPicker } from 'react-day-picker';
 import { ptBR } from 'react-day-picker/locale';
 
 import { fetchAvailability, fetchDoctors, type Doctor } from './availability.api';
-import {
-  CLINIC_TIME_ZONE,
-  formatClinicDate,
-  fromClinicDate,
-  toClinicDate,
-  todayInClinic,
-} from './booking-dates';
+import { CLINIC_TIME_ZONE, formatClinicDate, fromClinicDate, toClinicDate } from './booking-dates';
+import { useClinicToday } from './use-clinic-today';
 
 type DoctorAvailabilityProps = {
   examId: number;
@@ -77,7 +72,15 @@ export function DoctorAvailability({
     }
   }, [time, slotsError, slotsPending, slotsFetching, availableSlots, onTimeChange]);
 
-  const today = todayInClinic();
+  const currentClinicDate = useClinicToday();
+  const today = fromClinicDate(currentClinicDate);
+
+  useEffect(() => {
+    if (date && date < currentClinicDate) {
+      onDateChange(null);
+    }
+  }, [date, currentClinicDate, onDateChange]);
+
   const loadingSlots = slotsPending || slotsFetching;
 
   return (
