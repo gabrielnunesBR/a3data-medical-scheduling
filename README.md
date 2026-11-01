@@ -17,7 +17,7 @@ O projeto contém **frontend React, API NestJS e PostgreSQL**, além de testes a
 | **Localizar código e testes**                    | [Estrutura do projeto](#5-estrutura-do-projeto--onde-encontrar-cada-responsabilidade)  |
 | **Rodar testes e conferir o CI**                 | [Testes e qualidade](#6-testes-e-qualidade--o-que-foi-verificado-e-como-reproduzir)    |
 | **Explorar endpoints e coleção Postman**         | [API REST](#7-api-rest--exemplos-para-docker)                                          |
-| **Executar sem o frontend Docker**               | [Desenvolvimento local opcional](#8-desenvolvimento-local--fluxo-alternativo-opcional) |
+| **Desenvolver frontend e backend localmente**               | [Desenvolvimento local opcional](#8-desenvolvimento-local--fluxo-alternativo-opcional) |
 
 ---
 
@@ -378,6 +378,8 @@ A suíte automatizada cobre **regras de negócio, API, interface e inicializaç�
 
 ### Como reproduzir os testes automatizados
 
+**Pré-requisitos para executar os testes localmente:** diferentemente da execução da aplicação com Docker Compose, os comandos npm abaixo exigem Node.js 24 e npm instalados na máquina. Na raiz do repositório, execute `npm ci` para instalar as dependências. Configure também o arquivo `.env` conforme a seção de instalação. Para os testes E2E com PostgreSQL, siga a preparação do banco de testes descrita abaixo. Esses passos são opcionais para quem deseja apenas executar a aplicação pelo Docker.
+
 #### 1. Preparar o banco de testes — apenas para executar E2E localmente
 
 Os comandos desta seção são **opcionais para quem só deseja usar a aplicação com Docker**. Eles interessam a quem quer reproduzir as suítes automatizadas localmente. O ambiente de testes usa uma instância PostgreSQL independente. Na raiz do repositório:
@@ -530,7 +532,7 @@ Os schemas de entrada são derivados das validações Zod. O `Idempotency-Key` �
 
 A coleção pronta para importação está em [`docs/postman/medical-scheduling.postman_collection.json`](docs/postman/medical-scheduling.postman_collection.json). Ela inclui os cinco endpoints, uma requisição adicional de busca de exames, variáveis reutilizáveis e verificações básicas de resposta.
 
-A coleção usa `baseUrl=http://localhost:8080` por padrão, para funcionar após a instalação com Docker Compose. No desenvolvimento local, com a API executada diretamente, altere a variável `baseUrl` da coleção para `http://localhost:8080`. Se configurou `WEB_PORT` diferente no Docker Compose, ajuste `baseUrl` para essa porta.
+A coleção usa `baseUrl=http://localhost:8080` por padrão, para funcionar após a instalação com Docker Compose. No desenvolvimento local, com a API executada diretamente, altere a variável `baseUrl` da coleção para `http://localhost:3000`. Se configurou `WEB_PORT` diferente no Docker Compose, ajuste `baseUrl` para essa porta.
 
 Importe o JSON no Postman ou Insomnia e consulte **Exames**, **Médicos** e **Disponibilidade** antes de executar **Criar agendamento**. No `POST`, preencha `startAt` com um horário ISO 8601 válido, conforme a disponibilidade retornada; o horário não é preenchido automaticamente pela consulta. O header `Idempotency-Key` é opcional e deve usar um novo UUID para cada nova operação. **Executar o POST grava uma reserva real no banco configurado.**
 

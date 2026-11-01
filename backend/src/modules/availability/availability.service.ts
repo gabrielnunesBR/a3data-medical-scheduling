@@ -60,9 +60,7 @@ export class AvailabilityService {
 
     // Booking already loaded the exam; API queries still resolve it by ID.
     const exam =
-      typeof examOrId === 'number'
-        ? await examsRepository.findOneBy({ id: examOrId })
-        : examOrId;
+      typeof examOrId === 'number' ? await examsRepository.findOneBy({ id: examOrId }) : examOrId;
 
     if (!exam) {
       throw new NotFoundException('Exam not found.');
