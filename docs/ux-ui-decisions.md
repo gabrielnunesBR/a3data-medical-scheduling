@@ -1,3 +1,5 @@
+[← Voltar ao README](../README.md)
+
 # Diretrizes de UX/UI — Agendamento de Exames de Imagem
 
 **Projeto:** desafio técnico A3Data  
@@ -6,7 +8,7 @@
 
 ## Objetivo
 
-Criar um fluxo de agendamento de exames de imagem claro, acessível, responsivo e confiável, sem introduzir funcionalidades não suportadas pelo desafio ou pelo backend. A interface deve permitir encontrar um exame, escolher médico/data/horário e confirmar o agendamento informando o nome do paciente.
+Criar um fluxo de agendamento de exames de imagem claro, acessível, responsivo e confiável, atendendo aos requisitos centrais do desafio: pesquisar exames, consultar horários e confirmar reservas. Melhorias complementares de experiência, como comprovante, exportação para calendários e página 404 personalizada, devem apoiar essa jornada sem prometer operações que não estejam implementadas.
 
 ## Evidências e interpretação
 
@@ -22,10 +24,10 @@ Criar um fluxo de agendamento de exames de imagem claro, acessível, responsivo 
 
 ## Jornada de agendamento
 
-1. **Escolher exame:** pesquisar por nome; exibir duração; selecionar exame.
-2. **Escolher médico e horário:** listar médicos, escolher data e um horário retornado pela API; refletir carregamento, ausência de agenda e indisponibilidade.
+1. **Escolher exame:** pesquisar por nome, sem diferenciar maiúsculas, minúsculas ou acentos; exibir duração; selecionar exame.
+2. **Escolher médico e horário:** listar médicos, desabilitar no calendário dias passados ou sem expediente, escolher uma data e um horário retornado pela API; refletir carregamento, ausência de agenda e indisponibilidade.
 3. **Revisar e confirmar:** mostrar resumo, pedir somente o nome do paciente, permitir edição, enviar `POST /api/appointments` e tratar erros.
-4. **Sucesso:** exibir ID de confirmação e dados efetivamente retornados; não prometer e-mail/SMS ou orientações inexistentes.
+4. **Sucesso:** exibir ID de confirmação e dados retornados pela API; permitir imprimir/salvar o comprovante em PDF e exportar o compromisso para Google Calendar ou `.ics`, sem prometer envio de e-mail/SMS ou sincronização contínua.
 
 Regras de consistência: mudar exame limpa horário escolhido; mudar médico ou data também limpa o horário; a API é a fonte de verdade da disponibilidade; conflito HTTP 409 exige atualizar a lista e escolher outro horário.
 
@@ -34,6 +36,7 @@ Regras de consistência: mudar exame limpa horário escolhido; mudar médico ou 
 - **Mobile-first:** conteúdo em uma coluna, sem barra lateral fixa; botões grandes e resumo na etapa final ou depois do conteúdo.
 - **Desktop (>= 1024 px):** conteúdo centralizado até 1120 px; coluna principal (~65%) e resumo (~35%).
 - **Cabeçalho compacto:** nome do sistema e identificação de agendamento online, sem links fictícios.
+- **Rotas inexistentes:** página 404 com identidade visual consistente e ação para voltar ao agendamento, sem exibir ferramentas técnicas ao paciente.
 - **Indicador de progresso:** Exame → Horário → Confirmação, com `aria-current="step"`.
 - **Formulários e estados:** cartões discretos, títulos claros, seleção de horários bem diferenciada, foco visível, estados carregando/vazio/erro/sucesso.
 - Evitar fotografias genéricas de profissionais, carrosséis promocionais, convênios, unidades e custos que não estão nos dados do desafio.

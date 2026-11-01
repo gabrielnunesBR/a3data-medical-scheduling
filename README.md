@@ -238,7 +238,7 @@ As diretrizes sobre acessibilidade, tipografia, cores, componentes e jornada do 
 
 Os testes cobrem regras de negócio, validação HTTP, concorrência real no PostgreSQL, idempotência, componentes React, jornada Playwright, acessibilidade e inicialização pelo Docker. O CI possui **três jobs**: qualidade/unitários, integração PostgreSQL/Playwright e smoke test Docker.
 
-**Para reproduzir os testes localmente**, instale Node.js 24 e npm. Na raiz do repositório, com `.env` configurado conforme a seção 1:
+**Para reproduzir os testes localmente**, instale Node.js 24 e npm. Na raiz do repositório, com `.env` configurado conforme a [seção 1](#1-execução-rápida-com-docker-compose--recomendada):
 
 ```bash
 npm ci
