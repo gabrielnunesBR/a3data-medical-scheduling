@@ -61,6 +61,30 @@ describe('OpenAPI contract (e2e)', () => {
     }
   });
 
+  it('should document working weekdays in the doctors response', () => {
+    const doctors = getOperation('get', '/api/doctors');
+    const response = doctors.responses[200];
+
+    if (!response || !('content' in response)) {
+      throw new Error('GET /api/doctors must document a JSON response.');
+    }
+
+    expect(response.content?.['application/json']?.schema).toMatchObject({
+      type: 'array',
+      items: {
+        type: 'object',
+        required: expect.arrayContaining(['id', 'name', 'crm', 'workingWeekdays']),
+        properties: {
+          workingWeekdays: {
+            type: 'array',
+            uniqueItems: true,
+            items: { type: 'integer', minimum: 1, maximum: 7 },
+          },
+        },
+      },
+    });
+  });
+
   it('should document the Zod query and path parameters', () => {
     const exams = getOperation('get', '/api/exams');
 

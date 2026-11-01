@@ -81,6 +81,11 @@ export function DoctorAvailability({
     }
   }, [date, currentClinicDate, onDateChange]);
 
+  // DayPicker uses JavaScript weekdays (Sunday = 0); the API uses ISO weekdays (Sunday = 7).
+  const closedWeekdays = [0, 1, 2, 3, 4, 5, 6].filter(
+    (weekday) => !doctor?.workingWeekdays.includes(weekday === 0 ? 7 : weekday),
+  );
+
   const loadingSlots = slotsPending || slotsFetching;
 
   return (
@@ -156,7 +161,7 @@ export function DoctorAvailability({
                   weekStartsOn={0}
                   today={today}
                   startMonth={today}
-                  disabled={{ before: today }}
+                  disabled={[{ before: today }, { dayOfWeek: closedWeekdays }]}
                   selected={date ? fromClinicDate(date) : undefined}
                   onSelect={(selected) => {
                     onDateChange(selected ? toClinicDate(selected) : null);
@@ -170,6 +175,9 @@ export function DoctorAvailability({
               {date
                 ? `Data selecionada: ${formatClinicDate(date)}`
                 : 'Selecione uma data a partir de hoje.'}
+            </p>
+            <p className="mt-1 text-xs text-muted-ink">
+              Datas desabilitadas: anteriores a hoje ou sem atendimento deste profissional.
             </p>
           </section>
 

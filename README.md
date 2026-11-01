@@ -17,7 +17,7 @@ O projeto contém **frontend React, API NestJS e PostgreSQL**, além de testes a
 | **Localizar código e testes**                    | [Estrutura do projeto](#5-estrutura-do-projeto--onde-encontrar-cada-responsabilidade)  |
 | **Rodar testes e conferir o CI**                 | [Testes e qualidade](#6-testes-e-qualidade--o-que-foi-verificado-e-como-reproduzir)    |
 | **Explorar endpoints e coleção Postman**         | [API REST](#7-api-rest--exemplos-para-docker)                                          |
-| **Desenvolver frontend e backend localmente**    | [Desenvolvimento local opcional](#8-desenvolvimento-local--fluxo-alternativo-opcional) |
+| **Executar sem o frontend Docker**               | [Desenvolvimento local opcional](#8-desenvolvimento-local--fluxo-alternativo-opcional) |
 
 ---
 
@@ -128,7 +128,7 @@ As capturas mostram a interface para o paciente e a documentação interativa da
 ## 3. Funcionalidades implementadas
 
 - Busca de exames por nome, com indicação da duração do procedimento.
-- Listagem de médicos e consulta da disponibilidade por data e exame.
+- Listagem de médicos e consulta da disponibilidade por data e exame, com bloqueio de dias sem expediente no calendário.
 - Agendamento com nome do paciente, médico, exame e horário selecionado.
 - Validação de expediente, duração, horários passados e conflitos de reserva.
 - Proteção contra agendamentos simultâneos sobrepostos no PostgreSQL.
@@ -207,7 +207,7 @@ O fluxo é dividido em seleção de exame, escolha de médico/data/horário, rev
 ### Premissas adotadas
 
 - Todos os médicos podem realizar todos os exames fornecidos no desafio.
-- Os turnos representam agendas semanais recorrentes; não foram fornecidas exceções específicas para férias, feriados ou afastamentos.
+- Os turnos representam agendas semanais recorrentes; não foram fornecidas exceções específicas para férias, feriados ou afastamentos. O calendário desabilita datas passadas e dias da semana sem expediente do médico, mas permite selecionar datas com expediente mesmo quando todos os horários estão ocupados.
 - Cada exame ocupa integralmente a duração informada no catálogo.
 - Os horários candidatos são gerados a partir do **início de cada turno**, em intervalos iguais à duração do exame, sem ultrapassar o fim do expediente.
 - O fuso horário da clínica é `America/Sao_Paulo`. Os instantes são transmitidos com indicação explícita de fuso e podem ser persistidos ou serializados em UTC.
@@ -476,7 +476,7 @@ npm run test:browser --workspace=frontend -- --headed
 
 O Playwright inicia automaticamente a API de testes na **porta 3100** e o frontend na **porta 5174**, utilizando o PostgreSQL isolado na porta **5434**. A configuração não reaproveita servidores previamente iniciados nessas portas.
 
-Os cenários cobrem seleção de exame, médico, data e horário; revisão; confirmação e persistência; atualização da disponibilidade; e tratamento real de `409 Conflict`. Também é simulada a perda da resposta após a gravação no PostgreSQL, verificando que a repetição idempotente recupera o mesmo agendamento sem duplicá-lo.
+Os cenários cobrem seleção de exame, médico, data e horário; bloqueio de dias sem expediente e troca de médico; revisão; confirmação e persistência; atualização da disponibilidade; e tratamento real de `409 Conflict`. Também é simulada a perda da resposta após a gravação no PostgreSQL, verificando que a repetição idempotente recupera o mesmo agendamento sem duplicá-lo.
 
 A suíte de qualidade de interface verifica a ausência de transbordamento horizontal em telas de diferentes larguras, a navegação por teclado e violações detectáveis automaticamente das diretrizes WCAG 2.0 e 2.1 (níveis A e AA), usando axe-core. Essas verificações automatizadas não substituem uma auditoria manual completa de acessibilidade.
 
@@ -532,7 +532,7 @@ Os schemas de entrada são derivados das validações Zod. O `Idempotency-Key` �
 
 A coleção pronta para importação está em [`docs/postman/medical-scheduling.postman_collection.json`](docs/postman/medical-scheduling.postman_collection.json). Ela inclui os cinco endpoints, uma requisição adicional de busca de exames, variáveis reutilizáveis e verificações básicas de resposta.
 
-A coleção usa `baseUrl=http://localhost:8080` por padrão, para funcionar após a instalação com Docker Compose. No desenvolvimento local, com a API executada diretamente, altere a variável `baseUrl` da coleção para `http://localhost:3000`. Se configurou `WEB_PORT` diferente no Docker Compose, ajuste `baseUrl` para essa porta.
+A coleção usa `baseUrl=http://localhost:8080` por padrão, para funcionar após a instalação com Docker Compose. No desenvolvimento local, com a API executada diretamente, altere a variável `baseUrl` da coleção para `http://localhost:8080`. Se configurou `WEB_PORT` diferente no Docker Compose, ajuste `baseUrl` para essa porta.
 
 Importe o JSON no Postman ou Insomnia e consulte **Exames**, **Médicos** e **Disponibilidade** antes de executar **Criar agendamento**. No `POST`, preencha `startAt` com um horário ISO 8601 válido, conforme a disponibilidade retornada; o horário não é preenchido automaticamente pela consulta. O header `Idempotency-Key` é opcional e deve usar um novo UUID para cada nova operação. **Executar o POST grava uma reserva real no banco configurado.**
 
@@ -558,7 +558,7 @@ O parâmetro `search` é opcional. Sem ele, a API retorna o catálogo de exames.
 curl "http://localhost:8080/api/doctors"
 ```
 
-A resposta contém os identificadores dos médicos, necessários para consultar disponibilidade e criar agendamentos. Os médicos são listados em ordem alfabética por nome.
+A resposta contém `id`, `name`, `crm` e `workingWeekdays` (array de dias de atendimento, com **1 = segunda-feira** e **7 = domingo**, sem repetição). Os dias são calculados a partir dos turnos cadastrados. Os médicos são listados em ordem alfabética por nome. O frontend utiliza `workingWeekdays` para desabilitar no calendário os dias sem expediente; dias com expediente e sem vagas continuam selecionáveis.
 
 ### Consultar disponibilidade
 

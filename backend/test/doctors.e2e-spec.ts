@@ -10,6 +10,7 @@ type DoctorResponse = {
   id: number;
   name: string;
   crm: string;
+  workingWeekdays: number[];
 };
 
 describe('Doctors API (e2e)', () => {
@@ -52,17 +53,37 @@ describe('Doctors API (e2e)', () => {
     );
   });
 
+  it('should expose the weekly schedules of all five doctors', async () => {
+    const response = await request(app.getHttpServer()).get('/api/doctors').expect(200);
+    const doctors = response.body as DoctorResponse[];
+    const weekdaysByCrm = new Map(
+      doctors.map(({ crm, workingWeekdays }) => [crm, workingWeekdays]),
+    );
+
+    expect(weekdaysByCrm.get('CRM-MG 11111')).toEqual([1, 2, 3, 4, 5]);
+    expect(weekdaysByCrm.get('CRM-MG 22222')).toEqual([1, 2, 3, 4, 5]);
+    expect(weekdaysByCrm.get('CRM-MG 33333')).toEqual([1, 2, 3, 4]);
+    expect(weekdaysByCrm.get('CRM-MG 44444')).toEqual([2, 3, 4, 5, 6]);
+    expect(weekdaysByCrm.get('CRM-MG 55555')).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
   it('should return only the expected doctor fields', async () => {
     const response = await request(app.getHttpServer()).get('/api/doctors').expect(200);
 
     const doctors = response.body as DoctorResponse[];
 
     for (const doctor of doctors) {
-      expect(Object.keys(doctor).sort()).toEqual(['crm', 'id', 'name']);
+      expect(Object.keys(doctor).sort()).toEqual(['crm', 'id', 'name', 'workingWeekdays']);
 
       expect(doctor.id).toEqual(expect.any(Number));
       expect(doctor.name).toEqual(expect.any(String));
       expect(doctor.crm).toEqual(expect.any(String));
+      expect(doctor.workingWeekdays).toEqual(
+        [...new Set(doctor.workingWeekdays)].sort((a, b) => a - b),
+      );
+      expect(
+        doctor.workingWeekdays.every((day) => Number.isInteger(day) && day >= 1 && day <= 7),
+      ).toBe(true);
     }
   });
 });

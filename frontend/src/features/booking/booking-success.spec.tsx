@@ -27,6 +27,7 @@ const doctor: Doctor = {
   id: 1,
   name: 'Dra. Helena Marques',
   crm: 'CRM-MG 11111',
+  workingWeekdays: [1, 2, 3, 4, 5],
 };
 
 function renderSuccess(overrides?: Partial<Appointment>) {

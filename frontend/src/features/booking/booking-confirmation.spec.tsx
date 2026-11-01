@@ -94,6 +94,7 @@ beforeEach(() => {
           id: 1,
           name: 'Dra. Helena Marques',
           crm: 'CRM-MG 11111',
+          workingWeekdays: [1, 2, 3, 4, 5],
         },
       ]),
     ),

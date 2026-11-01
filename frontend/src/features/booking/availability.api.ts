@@ -2,6 +2,8 @@ export type Doctor = {
   id: number;
   name: string;
   crm: string;
+  /** ISO weekdays: Monday = 1, Sunday = 7. */
+  workingWeekdays: number[];
 };
 
 type AvailabilityParams = {

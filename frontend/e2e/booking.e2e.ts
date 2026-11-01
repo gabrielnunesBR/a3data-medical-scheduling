@@ -13,6 +13,7 @@ type Doctor = {
   id: number;
   name: string;
   crm: string;
+  workingWeekdays: number[];
 };
 
 function getFutureMonday(): string {
@@ -143,4 +144,44 @@ test('patient can select exam, doctor, date and time', async ({ page, request })
       name: 'Seu agendamento',
     }),
   ).toHaveCount(0);
+});
+
+test('calendar disables a date when the selected doctor does not work that weekday', async ({
+  page,
+  request,
+}) => {
+  const doctorsResponse = await request.get('/api/doctors');
+  expect(doctorsResponse.ok()).toBeTruthy();
+
+  const doctors = (await doctorsResponse.json()) as Doctor[];
+  const helena = doctors.find(({ crm }) => crm === 'CRM-MG 11111');
+  const thiago = doctors.find(({ crm }) => crm === 'CRM-MG 44444');
+
+  if (!helena || !thiago) {
+    throw new Error('Expected doctors were not seeded in the test database.');
+  }
+
+  expect(helena.workingWeekdays).toContain(1);
+  expect(thiago.workingWeekdays).not.toContain(1);
+
+  await page.goto('/');
+  await page
+    .getByRole('button', { name: /Ressonância magnética/i })
+    .first()
+    .click();
+  await page.getByRole('button', { name: 'Escolher médico e horário' }).click();
+
+  const select = page.getByRole('combobox', { name: 'Profissional' });
+  await select.selectOption(String(helena.id));
+
+  const futureMonday = getFutureMonday();
+  await selectCalendarDate(page, futureMonday);
+
+  await expect(page.getByText(/^Data selecionada:/)).toBeVisible();
+
+  await select.selectOption(String(thiago.id));
+
+  const monday = page.locator(`.booking-calendar .rdp-day[data-day="${futureMonday}"]`);
+  await expect(monday).toHaveClass(/rdp-disabled/);
+  await expect(page.getByText('Escolha uma data para consultar os horários.')).toBeVisible();
 });

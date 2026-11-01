@@ -16,11 +16,18 @@ export class DoctorsController {
       type: 'array',
       items: {
         type: 'object',
-        required: ['id', 'name', 'crm'],
+        required: ['id', 'name', 'crm', 'workingWeekdays'],
         properties: {
           id: { type: 'integer', example: 1 },
           name: { type: 'string', example: 'Dra. Helena Marques' },
           crm: { type: 'string', example: 'CRM-MG 11111' },
+          workingWeekdays: {
+            type: 'array',
+            description: 'Dias de atendimento: 1 = segunda-feira, 7 = domingo.',
+            uniqueItems: true,
+            items: { type: 'integer', minimum: 1, maximum: 7 },
+            example: [1, 2, 3, 4, 5],
+          },
         },
       },
     },
