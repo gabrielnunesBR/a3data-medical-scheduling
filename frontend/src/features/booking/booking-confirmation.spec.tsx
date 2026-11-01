@@ -355,6 +355,44 @@ describe('Booking confirmation', () => {
     );
   });
 
+  it('should allow retry with the same idempotency key after a temporary HTTP 503', async () => {
+    const keys: string[] = [];
+
+    server.use(
+      http.post('*/api/appointments', ({ request }) => {
+        keys.push(request.headers.get('Idempotency-Key') ?? '');
+
+        return HttpResponse.json(
+          { code: 'BOOKING_TEMPORARILY_UNAVAILABLE', message: 'deadlock detected' },
+          { status: 503 },
+        );
+      }),
+    );
+
+    const user = await goToConfirmation();
+
+    await user.type(
+      screen.getByRole('textbox', { name: 'Nome completo do paciente' }),
+      'Maria Oliveira',
+    );
+
+    const submitButton = screen.getByRole('button', { name: 'Confirmar agendamento' });
+
+    await user.click(submitButton);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('instabilidade temporária');
+    expect(screen.queryByText('deadlock detected')).not.toBeInTheDocument();
+
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(keys).toHaveLength(2);
+    });
+
+    expect(keys[0]).toMatch(/^[0-9a-f-]{36}$/i);
+    expect(keys[1]).toBe(keys[0]);
+  });
+
   it('should not expose technical errors to the patient', async () => {
     server.use(
       http.post('*/api/appointments', () =>

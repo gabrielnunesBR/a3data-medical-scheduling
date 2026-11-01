@@ -3,7 +3,11 @@ import { ChevronLeft } from 'lucide-react';
 import type { Exam } from '../exams/exams.api';
 
 import type { Doctor } from './availability.api';
-import { AppointmentRequestError, type Appointment } from './appointments.api';
+import {
+  AppointmentRequestError,
+  AppointmentTimeoutError,
+  type Appointment,
+} from './appointments.api';
 import { formatClinicDate } from './booking-dates';
 import { useBookingSubmission } from './use-booking-submission';
 
@@ -18,6 +22,10 @@ type BookingConfirmationProps = {
 };
 
 function getErrorMessage(error: unknown): string {
+  if (error instanceof AppointmentTimeoutError) {
+    return 'A confirmação demorou mais que o esperado. O agendamento pode ter sido registrado. Tente novamente para recuperar o resultado sem duplicar a reserva.';
+  }
+
   if (error instanceof AppointmentRequestError) {
     if (error.status === 409 && error.code === 'IDEMPOTENCY_KEY_REUSED') {
       return 'Esta confirmação não pode ser reutilizada com dados diferentes. Volte e revise o agendamento.';
@@ -38,6 +46,9 @@ function getErrorMessage(error: unknown): string {
 
       case 429:
         return 'Muitas tentativas de agendamento em pouco tempo. Aguarde alguns instantes antes de tentar novamente.';
+
+      case 503:
+        return 'Não foi possível confirmar agora por uma instabilidade temporária. Tente novamente com os mesmos dados.';
 
       default:
         return 'Não foi possível confirmar o resultado do agendamento. Você pode tentar novamente sem criar uma reserva duplicada.';

@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -55,37 +56,53 @@ export class AppointmentsService {
   ) {}
 
   async create(dto: CreateAppointmentDto, idempotencyKey?: string): Promise<AppointmentResult> {
-    if (!idempotencyKey) {
-      return this.createNew(dto, null);
-    }
-
-    return this.appointmentsRepository.manager.transaction(async (manager) => {
-      await manager.query(
-        `SELECT pg_advisory_xact_lock(
-            hashtextextended($1::text, 0)
-          )`,
-        [idempotencyKey],
-      );
-
-      const repository = manager.getRepository(Appointment);
-
-      const existing = await repository.findOneBy({
-        idempotencyKey,
-      });
-
-      if (existing) {
-        if (!matchesRequest(existing, dto)) {
-          throw new ConflictException({
-            code: 'IDEMPOTENCY_KEY_REUSED',
-            message: 'Idempotency key was already used with different data.',
-          });
-        }
-
-        return toAppointmentResult(existing);
+    try {
+      if (!idempotencyKey) {
+        return await this.createNew(dto, null);
       }
 
-      return this.createNew(dto, idempotencyKey, manager);
-    });
+      return await this.appointmentsRepository.manager.transaction(async (manager) => {
+        await manager.query(
+          `SELECT pg_advisory_xact_lock(
+              hashtextextended($1::text, 0)
+            )`,
+          [idempotencyKey],
+        );
+
+        const repository = manager.getRepository(Appointment);
+
+        const existing = await repository.findOneBy({
+          idempotencyKey,
+        });
+
+        if (existing) {
+          if (!matchesRequest(existing, dto)) {
+            throw new ConflictException({
+              code: 'IDEMPOTENCY_KEY_REUSED',
+              message: 'Idempotency key was already used with different data.',
+            });
+          }
+
+          return toAppointmentResult(existing);
+        }
+
+        return this.createNew(dto, idempotencyKey, manager);
+      });
+    } catch (error: unknown) {
+      // A deadlock aborts the PostgreSQL transaction: retry only in a NEW request.
+      // The client retains its Idempotency-Key for an identical retry.
+      if (
+        error instanceof QueryFailedError &&
+        (error.driverError as { code?: string }).code === '40P01'
+      ) {
+        throw new ServiceUnavailableException({
+          code: 'BOOKING_TEMPORARILY_UNAVAILABLE',
+          message: 'Temporary database contention. Retry the same operation.',
+        });
+      }
+
+      throw error;
+    }
   }
 
   private async createNew(
@@ -182,7 +199,7 @@ export class AppointmentsService {
           constraint?: string;
         };
 
-        if (driverError.code === '23P01' || driverError.code === '40P01') {
+        if (driverError.code === '23P01') {
           throw new ConflictException('The selected time slot is no longer available.');
         }
 

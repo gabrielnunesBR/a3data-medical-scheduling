@@ -6,6 +6,7 @@ import {
   ApiHeader,
   ApiNotFoundResponse,
   ApiOperation,
+  ApiServiceUnavailableResponse,
   ApiTags,
   ApiTooManyRequestsResponse,
   ApiUnprocessableEntityResponse,
@@ -65,6 +66,9 @@ export class AppointmentsController {
   })
   @ApiTooManyRequestsResponse({
     description: 'Limite de 20 tentativas por minuto por IP excedido.',
+  })
+  @ApiServiceUnavailableResponse({
+    description: 'Contenção temporária no banco (deadlock); tente novamente com a mesma chave.',
   })
   create(
     @Body({ schema: createAppointmentSchema }) dto: CreateAppointmentDto,

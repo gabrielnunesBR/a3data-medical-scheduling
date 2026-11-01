@@ -162,7 +162,7 @@ describe('OpenAPI contract (e2e)', () => {
   it('should document appointment errors and health check unavailability', () => {
     const appointment = getOperation('post', '/api/appointments');
 
-    for (const status of [201, 400, 404, 409, 422, 429]) {
+    for (const status of [201, 400, 404, 409, 422, 429, 503]) {
       expect(appointment.responses[status], `Missing HTTP ${status}`).toBeDefined();
     }
 

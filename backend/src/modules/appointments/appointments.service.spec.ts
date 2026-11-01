@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto';
 
-import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  ServiceUnavailableException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Test } from '@nestjs/testing';
 import { QueryFailedError } from 'typeorm';
@@ -211,7 +216,7 @@ describe('AppointmentsService', () => {
     await expect(service.create(dto)).rejects.toThrow(ConflictException);
   });
 
-  it('should translate database deadlocks during booking to HTTP 409', async () => {
+  it('should translate database deadlocks during booking to HTTP 503', async () => {
     const databaseError = new QueryFailedError(
       'INSERT INTO appointments...',
       [],
@@ -222,9 +227,29 @@ describe('AppointmentsService', () => {
 
     appointmentsRepository.save.mockRejectedValue(databaseError);
 
-    await expect(service.create(dto)).rejects.toThrow(ConflictException);
+    await expect(service.create(dto)).rejects.toMatchObject({
+      status: 503,
+      response: {
+        code: 'BOOKING_TEMPORARILY_UNAVAILABLE',
+      },
+    });
 
     expect(appointmentsRepository.save).toHaveBeenCalledOnce();
+  });
+
+  it('should report a transaction-level deadlock as a retryable HTTP 503', async () => {
+    const databaseError = new QueryFailedError(
+      'SELECT pg_advisory_xact_lock(...)',
+      [],
+      Object.assign(new Error('deadlock detected'), {
+        code: '40P01',
+      }),
+    );
+
+    appointmentsRepository.manager.transaction.mockRejectedValueOnce(databaseError);
+
+    await expect(service.create(dto, randomUUID())).rejects.toThrow(ServiceUnavailableException);
+    expect(appointmentsRepository.save).not.toHaveBeenCalled();
   });
 
   it('should not hide unexpected database errors', async () => {

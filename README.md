@@ -57,6 +57,8 @@ a3data-medical-backend:0.1.0
 a3data-medical-web:0.1.0
 ```
 
+Os Dockerfiles utilizam imagens-base por tags: `node:24-bookworm-slim` para a compilação e execução do backend e para a compilação do frontend; e `nginx:stable-alpine` para servir a aplicação React. Essas tags podem receber atualizações e, portanto, builds feitos em datas diferentes podem utilizar revisões distintas das imagens oficiais. O PostgreSQL no Compose também utiliza uma tag atualizável: `postgres:17`. Para uma implantação que exija maior reprodutibilidade, seria possível fixar as imagens-base por digests OCI e revisar esses digests periodicamente.
+
 A versão `0.1.0` também identifica o projeto, os workspaces e a documentação OpenAPI. Se quiser identificar outra versão das imagens, acrescente `IMAGE_TAG=0.2.0` ao `.env` antes de construir. Essa variável **altera apenas as tags das imagens construídas localmente**, sem modificar automaticamente a versão do código nem publicar nada em um registry. Um deploy real utilizaria imagens previamente testadas e publicadas, preferencialmente referenciadas por digest imutável.
 
 ### Smoke test Docker
@@ -480,6 +482,7 @@ A requisição também aceita o header opcional `Idempotency-Key`, detalhado a s
 | `409 Conflict`             | Horário ocupado, conflito com outra reserva ou reutilização indevida de uma chave de idempotência |
 | `422 Unprocessable Entity` | Horário passado, fora do expediente ou fora da grade válida                                       |
 | `429 Too Many Requests`    | Limite de tentativas de agendamento excedido                                                      |
+| `503 Service Unavailable`  | Contenção temporária no banco durante a confirmação; tente novamente com a mesma chave            |
 
 ### Idempotência na criação de agendamentos
 
@@ -550,7 +553,7 @@ EXCLUDE USING GIST (
 )
 ```
 
-Ela impede que duas requisições concorrentes confirmem horários conflitantes para o mesmo médico. O PostgreSQL retorna SQLSTATE `23P01` quando a restrição é violada, e a API converte o erro em `409 Conflict`. Um deadlock detectado durante a tentativa de reserva (`40P01`) também é tratado como `409 Conflict`, sem confirmar a operação. Nesse caso, o cliente deve consultar novamente a disponibilidade antes de tentar outra reserva; não há retry automático da transação.
+Ela impede que duas requisições concorrentes confirmem horários conflitantes para o mesmo médico. O PostgreSQL retorna SQLSTATE `23P01` quando a restrição é violada, e a API converte o erro em `409 Conflict`. Um deadlock detectado durante a operação (`40P01`) é tratado como `503 Service Unavailable`, com código `BOOKING_TEMPORARILY_UNAVAILABLE`. A transação é revertida pelo PostgreSQL; não há retry automático dentro dela. O cliente pode tentar novamente com os mesmos dados e a mesma chave de idempotência.
 
 A tabela também possui `CHECK (start_at < end_at)`, impedindo intervalos com duração nula ou negativa.
 
@@ -583,6 +586,8 @@ Esses cabeçalhos são aplicados às respostas de sucesso e também às resposta
 O frontend utiliza o proxy `/api` no ambiente de desenvolvimento. Configurações de CORS e proxies devem ser adaptadas às origens e à infraestrutura da implantação; os cabeçalhos descritos acima se referem à **API**, não ao servidor de desenvolvimento do Vite.
 
 ### Proteção contra excesso de requisições
+
+Na confirmação, o frontend limita a espera da requisição a **15 segundos**. Se ocorrer timeout, o resultado pode ser desconhecido; por isso, uma nova tentativa com os mesmos dados reutiliza a mesma chave de idempotência. O timeout não cancela nem desfaz uma reserva que já tenha sido confirmada no servidor.
 
 O endpoint `POST /api/appointments` utiliza `@nestjs/throttler` para aplicar **20 requisições por minuto por endereço IP**. Ao exceder o limite, retorna `429 Too Many Requests`. Os endpoints de consulta não recebem esse limite nesta configuração.
 
@@ -671,7 +676,7 @@ NODE_ENV=test npm exec --workspace=backend -- vitest run \
   test/appointments-concurrency.e2e-spec.ts
 ```
 
-Os testes E2E cobrem requisições concorrentes para o mesmo horário, sobreposições com durações diferentes, horários consecutivos, atendimentos simultâneos por médicos diferentes e a restrição `23P01` do PostgreSQL. O tratamento de deadlocks `40P01` durante a gravação é validado em um teste unitário do serviço; a suíte E2E não provoca deliberadamente um deadlock no PostgreSQL.
+Os testes E2E cobrem requisições concorrentes para o mesmo horário, sobreposições com durações diferentes, horários consecutivos, atendimentos simultâneos por médicos diferentes e a restrição `23P01` do PostgreSQL. O tratamento de deadlocks `40P01` durante a gravação e no escopo da transação é validado por testes unitários do serviço; a suíte E2E não provoca deliberadamente um deadlock no PostgreSQL.
 
 Os testes HTTP também cobrem idempotência, reaproveitamento de chaves, rate limiting, Request ID e o contrato OpenAPI dos cinco endpoints. Os testes de cabeçalhos de segurança verificam as respostas `200`, `400` e `404`. Testes específicos verificam o health check (200/503), a classificação dos logs e a sanitização de exceções inesperadas.
 
