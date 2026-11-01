@@ -17,7 +17,7 @@ O projeto contém **frontend React, API NestJS e PostgreSQL**, além de testes a
 | **Localizar código e testes**                    | [Estrutura do projeto](#5-estrutura-do-projeto--onde-encontrar-cada-responsabilidade)  |
 | **Rodar testes e conferir o CI**                 | [Testes e qualidade](#6-testes-e-qualidade--o-que-foi-verificado-e-como-reproduzir)    |
 | **Explorar endpoints e coleção Postman**         | [API REST](#7-api-rest--exemplos-para-docker)                                          |
-| **Desenvolver frontend e backend localmente**               | [Desenvolvimento local opcional](#8-desenvolvimento-local--fluxo-alternativo-opcional) |
+| **Desenvolver frontend e backend localmente**    | [Desenvolvimento local opcional](#8-desenvolvimento-local--fluxo-alternativo-opcional) |
 
 ---
 
