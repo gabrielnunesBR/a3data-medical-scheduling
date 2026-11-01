@@ -4,6 +4,86 @@ Aplicação full-stack desenvolvida para o desafio técnico da **A3Data**. Permi
 
 O fluxo principal está implementado no **backend NestJS** e no **frontend React**, com testes unitários, de integração HTTP e de ponta a ponta em navegador real.
 
+## Execução rápida com Docker Compose
+
+Esta é a opção recomendada para o avaliador: inicia **frontend React, API NestJS e PostgreSQL** com Docker Compose, sem instalar Node.js ou npm na máquina. São necessários **Git, Docker Engine e Docker Compose**.
+
+### 1. Clonar o repositório
+
+```bash
+git clone https://github.com/gabrielnunesBR/a3data-medical-scheduling.git
+cd a3data-medical-scheduling
+```
+
+### 2. Configurar o ambiente
+
+```bash
+cp .env.example .env
+```
+
+Edite o arquivo `.env` e defina uma senha local para `POSTGRES_PASSWORD`. Não versione esse arquivo nem compartilhe credenciais. O Compose configura automaticamente a comunicação interna dos containers; não é necessário alterar `POSTGRES_HOST` para `db` no `.env` usado pelo desenvolvimento local.
+
+### 3. Construir e iniciar a aplicação
+
+```bash
+docker compose up -d --build
+```
+
+O Compose aguarda o PostgreSQL ficar saudável, executa as **3 migrations** e importa **30 exames, 5 médicos e 36 turnos** antes de disponibilizar a API e o frontend.
+
+Verifique o estado dos serviços:
+
+```bash
+docker compose ps -a
+```
+
+O esperado é `db`, `api` e `web` como **healthy** e `db-init` como **exited (0)**. O `db-init` é uma tarefa de preparação de execução única, não um serviço que precisa permanecer ativo. O banco `db_test` não sobe na execução padrão, pois está no perfil `test`.
+
+| Serviço                   | Endereço padrão                    |
+| ------------------------- | ---------------------------------- |
+| Aplicação React (Nginx)   | `http://localhost:8080`            |
+| Swagger / OpenAPI         | `http://localhost:8080/api/docs`   |
+| Health check              | `http://localhost:8080/api/health` |
+| PostgreSQL (acesso local) | `127.0.0.1:5433`                   |
+
+A API não publica a porta `3000` no host: o Nginx encaminha as requisições `/api` pela rede interna do Docker. Para alterar a porta da aplicação, defina `WEB_PORT` no `.env` (por exemplo, `WEB_PORT=8081`). A porta local do banco continua configurável por `POSTGRES_PORT`.
+
+### Imagens e versionamento
+
+O Compose constrói as imagens do projeto com a tag **`0.1.0`** por padrão:
+
+```text
+a3data-medical-backend:0.1.0
+a3data-medical-web:0.1.0
+```
+
+Se quiser identificar outra versão, acrescente `IMAGE_TAG=0.2.0` ao `.env` antes de construir. Essa configuração **identifica as imagens construídas localmente**, sem publicar nada em um registry. Um deploy real utilizaria imagens previamente testadas e publicadas, preferencialmente referenciadas por digest imutável.
+
+### Smoke test Docker
+
+Com os containers ativos, execute na raiz do repositório:
+
+```bash
+bash scripts/docker-smoke.sh
+```
+
+O script verifica a conclusão do `db-init`, o health check da API, a entrega do HTML React pelo Nginx e a presença de **30 exames** e **5 médicos**. Não cria agendamentos. Para executá-lo manualmente, o computador também precisa de Bash, `curl` e Python 3; essas ferramentas não são necessárias apenas para abrir a aplicação pelo Docker. O mesmo smoke test é executado automaticamente no GitHub Actions.
+
+### Logs e encerramento
+
+```bash
+docker compose logs --tail=100 db-init api web
+docker compose down
+```
+
+O comando `docker compose down` preserva os volumes e os dados do PostgreSQL. Para **reinicialização destrutiva** do ambiente local (inclusive os dados do banco de testes), use somente se tiver certeza de que deseja apagar os dados:
+
+```bash
+docker compose --profile test down --remove-orphans --volumes
+```
+
+> **Escopo de execução:** este Compose facilita a avaliação local e usa HTTP em `127.0.0.1`; não representa um deploy público pronto para produção. O backend confia no único Nginx configurado como proxy (`TRUST_PROXY_HOPS=1`). Uma implantação pública exigiria revisar a cadeia de proxies, configurar HTTPS, gerenciamento de segredos e demais controles de produção.
+
 ## Visão da aplicação
 
 ### Desktop — seleção de médico, data e horário
@@ -27,10 +107,24 @@ O fluxo principal está implementado no **backend NestJS** e no **frontend React
 
 ![Swagger UI com os cinco endpoints documentados da API de agendamento](docs/screenshots/api-swagger.png)
 
-A documentação interativa da API está disponível em
-[`/api/docs`](http://localhost:3000/api/docs) com o backend local ou em [`localhost:8080/api/docs`](http://localhost:8080/api/docs) com Docker Compose completo.
+A documentação interativa da API está disponível em [`http://localhost:8080/api/docs`](http://localhost:8080/api/docs) com Docker Compose completo ou em [`http://localhost:3000/api/docs`](http://localhost:3000/api/docs) com o backend executado localmente.
 
 As capturas mostram a jornada de agendamento em diferentes tamanhos de tela.
+
+## Cobertura de testes — visão geral
+
+A suíte automatizada cobre **regras de negócio, API, interface e inicialização da infraestrutura**, não apenas cenários de sucesso. O mapa abaixo resume as verificações implementadas; comandos e detalhes estão em [Testes automatizados](#testes-automatizados) e [Integração contínua](#integração-contínua).
+
+| Camada                                | Principais cenários verificados                                                                                                                                                                                              |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Unitários — backend**               | Geração de horários a partir dos turnos, duração dos exames, filtragem de horários ocupados, validação de agendamentos, idempotência, tratamento de erros, configuração de ambiente, saúde da API e logs.                    |
+| **Componentes — frontend**            | Busca e seleção de exames, escolha de profissional/data/horário, limpeza de seleções dependentes, validação do paciente, tratamento de conflitos e estados de erro, comprovante e ações de calendário.                       |
+| **Integração HTTP — PostgreSQL real** | Endpoints de exames, médicos, disponibilidade e agendamentos; migrations e integridade dos dados; concorrência e exclusão GiST; idempotência, rate limiting, health check, cabeçalhos de segurança e contrato OpenAPI.       |
+| **E2E — Playwright**                  | Jornada de agendamento no Chromium, revisão, confirmação, recuperação de falha de resposta, conflitos `409`, impressão/comprovante, download `.ics`, responsividade, teclado e verificações automatizadas de acessibilidade. |
+| **Smoke test — Docker Compose**       | Build e inicialização do stack, conclusão do `db-init`, health check da API, frontend servido pelo Nginx e presença dos 30 exames e cinco médicos.                                                                           |
+| **Qualidade e CI**                    | Prettier, Oxlint, checagem TypeScript, builds e execução das suítes em três jobs independentes do GitHub Actions.                                                                                                            |
+
+**Cobertura funcional não equivale a percentual de cobertura de linhas ou branches.** O projeto fornece um comando para gerar relatório de cobertura do backend, mas não declara um percentual global sem medição consolidada. Testes automatizados de acessibilidade não substituem uma auditoria manual completa.
 
 ## Tecnologias
 
@@ -49,6 +143,25 @@ As capturas mostram a jornada de agendamento em diferentes tamanhos de tela.
 
 O projeto utiliza um **monorepo com npm Workspaces**, separando a API NestJS (`backend/`) da interface React (`frontend/`). Essa organização permite manter as duas aplicações e seus testes no mesmo repositório, com dependências e comandos de execução próprios.
 
+### Decisões arquiteturais — resumo e justificativas
+
+| Decisão                                           | Motivo e consequência                                                                                                                                                  |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Monorepo com npm Workspaces**                   | Mantém frontend e backend no mesmo repositório, com scripts, dependências e CI reproduzíveis.                                                                          |
+| **NestJS como fonte de verdade**                  | Valida expediente, duração, disponibilidade e criação de reservas no servidor; o React não decide se um horário pode ser persistido.                                   |
+| **PostgreSQL com restrição GiST**                 | Impede intervalos sobrepostos para o mesmo médico mesmo com requisições simultâneas, independentemente de verificações prévias na API.                                 |
+| **Idempotência persistida no banco**              | Evita duplicação em reenvios da mesma operação; chave UUID opcional e controle transacional, sem confundir idempotência com autenticação.                              |
+| **TypeORM com migrations e `synchronize: false`** | Evolução explícita e auditável do schema, sem alteração automática de tabelas durante a inicialização da API.                                                          |
+| **`America/Sao_Paulo` e instantes UTC**           | Mostra horários no fuso da clínica e mantém timestamps com fuso explícito entre backend, banco e frontend.                                                             |
+| **Seeds idempotentes**                            | Repetir a preparação do ambiente não duplica exames, médicos nem turnos.                                                                                               |
+| **React SPA e TanStack Query**                    | Separa estado de navegação e dados remotos, com invalidação da disponibilidade após conflitos; não introduz SSR desnecessário.                                         |
+| **Nginx como entrada do Compose**                 | Serve o frontend compilado e encaminha `/api` para o NestJS sem publicar a porta da API; o backend confia no único proxy configurado (`TRUST_PROXY_HOPS=1`).           |
+| **Builds Docker multi-stage e `db-init`**         | Separam compilação de execução, iniciam a API depois de migrations/seeds e evitam manter a CLI global do npm no runtime do backend.                                    |
+| **Logs, Request ID e rate limiting**              | Facilitam diagnóstico sem registrar nomes de pacientes nos logs HTTP e limitam o endpoint de criação; a contagem em memória é adequada apenas à instância única atual. |
+| **Sem autenticação e serviços adicionais**        | Mantém o escopo do desafio e a instalação simples; um produto público exigiria autenticação, controles de dados pessoais, HTTPS, segredos e operação distribuída.      |
+
+As decisões de interface, acessibilidade e design system estão detalhadas em [`docs/ux-ui-decisions.md`](docs/ux-ui-decisions.md). As regras de concorrência, idempotência e limites de produção são desenvolvidas nas seções seguintes.
+
 ### Backend
 
 - **NestJS e TypeScript:** organização por módulos, injeção de dependências e separação entre controllers, services e regras de negócio.
@@ -63,6 +176,7 @@ O projeto utiliza um **monorepo com npm Workspaces**, separando a API NestJS (`b
 ### Frontend
 
 - **React, TypeScript e Vite:** aplicação de página única com inicialização rápida em desenvolvimento, sem necessidade de renderização no servidor para o fluxo solicitado.
+- **Identidade visual:** favicon com o mesmo símbolo `ScanLine` do cabeçalho e as cores do design system, sem marca fictícia de clínica.
 - **TanStack Query:** consultas, cache, invalidação e atualização da disponibilidade.
 - **React Hook Form e Zod:** gerenciamento e validação do formulário de confirmação.
 - **Tailwind CSS:** estilização responsiva, com componentes e padrões visuais próprios do projeto.
@@ -110,25 +224,34 @@ cria sincronização contínua com o agendamento.
 
 ```text
 a3data-medical-scheduling/
-├── backend/                 # API REST, regras de negócio, migrations e seeds
-├── frontend/                # Interface React e testes de navegador
-├── challenge/               # Enunciado e arquivos originais do desafio
+├── backend/                     # API NestJS, regras de negócio, migrations e seeds
+│   └── Dockerfile               # Build e runtime da API
+├── frontend/                    # React, componentes e testes de navegador
+│   ├── Dockerfile               # Build React e runtime Nginx
+│   ├── index.html               # Metadados e favicon da aplicação
+│   ├── public/
+│   │   ├── favicon.svg          # Ícone vetorial para o navegador
+│   │   ├── favicon.ico          # Compatibilidade com outros navegadores
+│   │   └── apple-touch-icon.png # Ícone para atalhos em dispositivos Apple
+│   └── nginx.conf               # SPA e proxy /api
+├── challenge/                   # Enunciado e dados originais do desafio
 │   └── dados/
 │       ├── exames.csv
 │       └── medicos.md
 ├── docs/
-│   ├── ux-ui-decisions.md   # Diretrizes e decisões de design
+│   ├── ux-ui-decisions.md       # Diretrizes e decisões de UX/UI
 │   ├── postman/
-│   │   └── medical-scheduling.postman_collection.json  # Coleção importável
+│   │   └── medical-scheduling.postman_collection.json
 │   └── screenshots/
 │       ├── app-desktop-booking.png
 │       ├── app-mobile-review.png
 │       └── app-mobile-success.png
-├── backend/Dockerfile       # Imagem da API e tarefas de preparação do banco
-├── frontend/Dockerfile      # Build React e execução com Nginx
-├── frontend/nginx.conf      # Interface, SPA e proxy /api
-├── .dockerignore            # Arquivos excluídos das imagens
-├── compose.yaml             # Aplicação completa e banco isolado de testes
+├── scripts/
+│   └── docker-smoke.sh          # Smoke test do ambiente Docker
+├── .github/workflows/
+│   └── ci.yml                   # Testes, integração e smoke test Docker
+├── .dockerignore
+├── compose.yaml                 # Aplicação completa e banco de testes isolado
 ├── .env.example
 ├── .env.test.example
 └── README.md
@@ -138,58 +261,9 @@ a3data-medical-scheduling/
 
 As decisões sobre a jornada do paciente, o design system, as cores, a tipografia, a responsividade e a acessibilidade estão registradas em [Diretrizes de UX/UI](docs/ux-ui-decisions.md).
 
-## Pré-requisitos
+## Desenvolvimento local (Node.js e Vite)
 
-Para executar **toda a aplicação via Docker**, é necessário apenas Docker com Compose e Git; não é preciso instalar Node.js/npm localmente.
-
-Para o **desenvolvimento local** e execução de testes, também são necessários Node.js 24 e npm. Os testes de navegador exigem o Chromium do Playwright (instruções abaixo).
-
-## Execução simplificada com Docker Compose
-
-Para um avaliador iniciar **frontend, backend e PostgreSQL** sem instalar Node.js localmente:
-
-```bash
-git clone https://github.com/gabrielnunesBR/a3data-medical-scheduling.git
-cd a3data-medical-scheduling
-cp .env.example .env
-```
-
-Defina uma senha local em `POSTGRES_PASSWORD` dentro do `.env` e execute:
-
-```bash
-docker compose up -d --build
-```
-
-Aguarde o serviço `web` ficar `healthy` em `docker compose ps`. O Compose aguarda o banco de dados, aplica as migrations e executa os dois seeds antes de disponibilizar a API e o frontend.
-
-| Serviço                   | Endereço                           |
-| ------------------------- | ---------------------------------- |
-| Aplicação React (Nginx)   | `http://localhost:8080`            |
-| Swagger via Nginx         | `http://localhost:8080/api/docs`   |
-| Health check via Nginx    | `http://localhost:8080/api/health` |
-| PostgreSQL (acesso local) | `127.0.0.1:5433`                   |
-
-A porta da aplicação pode ser alterada definindo `WEB_PORT` no `.env` (por exemplo, `WEB_PORT=8081`). A porta local do PostgreSQL continua configurável por `POSTGRES_PORT`. A API não publica a porta `3000` no host; o Nginx encaminha as requisições `/api` pela rede interna do Compose.
-
-Comandos úteis:
-
-```bash
-docker compose ps
-docker compose logs --tail=100 db-init api web
-docker compose down
-```
-
-O container `db-init` é uma tarefa de execução única: deve terminar com **código 0**. As migrations e os seeds são idempotentes. `docker compose down` preserva o volume do banco. Para uma reinicialização totalmente limpa,
-`docker compose --profile test down --remove-orphans --volumes` remove os containers e volumes
-**deste projeto**, incluindo os dois bancos PostgreSQL. Isso apaga permanentemente os dados
-locais de desenvolvimento e testes: use somente quando quiser reiniciar do zero.
-A execução normal não exige essa limpeza.
-
-> **Nota:** esta configuração é voltada à avaliação local, não à publicação em produção. O Nginx serve HTTP no endereço de loopback e confia em exatamente um proxy antes da API. Para um deploy público, seriam necessários HTTPS, segredos externos e uma configuração de proxies conforme a infraestrutura real.
-
-O fluxo antigo de desenvolvimento, utilizando Vite e NestJS separadamente, continua disponível abaixo.
-
-## Instalação e execução local
+Este fluxo é alternativo ao Docker Compose completo. Requer **Node.js 24, npm, Docker com Compose e Git**. Para os testes de navegador, instale também o Chromium do Playwright conforme as instruções de testes.
 
 ### 1. Clonar o repositório
 
@@ -288,6 +362,8 @@ npm run build --workspace=frontend
 ```
 
 ## API REST
+
+Os exemplos `curl` desta seção utilizam o backend executado diretamente em `http://localhost:3000`. Se estiver utilizando o **Docker Compose completo**, substitua esse endereço por `http://localhost:8080`; o Nginx encaminha `/api` internamente para o backend.
 
 | Método | Endpoint                                            | Finalidade                                      |
 | ------ | --------------------------------------------------- | ----------------------------------------------- |
@@ -506,13 +582,14 @@ Essa proteção reduz abuso, mas não substitui mecanismos de verificação de i
 
 ## Testes automatizados
 
-O projeto possui três níveis de testes:
+A validação automatizada abrange três camadas de testes funcionais e um smoke test da infraestrutura:
 
-| Tipo                    | Ferramentas                        | Escopo                                                      |
-| ----------------------- | ---------------------------------- | ----------------------------------------------------------- |
-| Unitários e componentes | Vitest, React Testing Library, MSW | Regras de negócio, formulários e estados da interface       |
-| E2E HTTP                | Vitest, Supertest, PostgreSQL      | Endpoints, persistência, validações e concorrência          |
-| E2E no navegador        | Playwright, Chromium, axe-core     | Jornada real, idempotência, responsividade e acessibilidade |
+| Tipo                    | Ferramentas                          | Escopo                                                      |
+| ----------------------- | ------------------------------------ | ----------------------------------------------------------- |
+| Unitários e componentes | Vitest, React Testing Library, MSW   | Regras de negócio, formulários e estados da interface       |
+| E2E HTTP                | Vitest, Supertest, PostgreSQL        | Endpoints, persistência, validações e concorrência          |
+| E2E no navegador        | Playwright, Chromium, axe-core       | Jornada real, idempotência, responsividade e acessibilidade |
+| Smoke test Docker       | Docker Compose, Bash, curl, Python 3 | Inicialização, health check, frontend e dados importados    |
 
 ### 1. Preparar o banco de testes
 
@@ -629,28 +706,31 @@ O projeto compartilha uma configuração do Prettier para padronizar código no 
 
 ## Integração contínua
 
-O workflow `.github/workflows/ci.yml` é executado em pushes e pull requests da branch `main`, além de permitir execução manual. Há dois jobs:
+O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) é executado em pushes e pull requests da branch `main` e também permite execução manual. Ele contém **três jobs independentes**:
 
-- **Quality and unit tests:** `npm ci`, Prettier, Oxlint, verificação de tipos TypeScript, testes unitários do backend e frontend e build das duas aplicações.
+- **Quality and unit tests:** `npm ci`, Prettier, Oxlint, verificação de tipos TypeScript, testes unitários do backend/frontend e build das duas aplicações.
 - **PostgreSQL integration tests:** serviço PostgreSQL 17 temporário, migrations, seeds, E2E HTTP (incluindo o contrato OpenAPI), Chromium e testes Playwright com verificações de acessibilidade.
+- **Docker Compose smoke test:** valida a configuração do Compose, constrói e inicializa `db`, `db-init`, `api` e `web`, e executa [`scripts/docker-smoke.sh`](scripts/docker-smoke.sh) para verificar inicialização, health check, HTML do frontend e dados de referência.
 
-O ambiente do CI utiliza banco isolado e não requer credenciais de produção ou serviços externos. Em caso de falha no Playwright, relatórios e traces são disponibilizados como artifacts por tempo limitado.
+O terceiro job utiliza credenciais **descartáveis**, exclusivas do runner, e a tag de imagem `ci-smoke`; não precisa de credenciais de produção nem de uma conta em registry. Em caso de falha, exibe os logs dos containers e remove os recursos temporários ao terminar.
+
+Em caso de falha nos testes Playwright, relatórios e traces são disponibilizados como artifacts por tempo limitado. O smoke test Docker **não substitui** os testes de regras de negócio, concorrência e jornada real: essas responsabilidades continuam cobertas pelos outros jobs.
 
 ## Comandos úteis
 
-Verificar os containers:
+Para consultar os containers da aplicação e do perfil de testes (quando habilitado):
 
 ```bash
-docker compose --profile test ps
+docker compose --profile test ps -a
 ```
 
-Encerrar os serviços:
+Para consultar logs do Docker Compose:
 
 ```bash
-docker compose down
+docker compose logs --tail=100 db-init api web
 ```
 
-`docker compose down`, sem a opção `-v`, **preserva os volumes nomeados** do PostgreSQL. Evite `docker compose down -v` se desejar conservar os dados locais.
+As instruções de inicialização, smoke test e limpeza segura dos volumes estão em [Execução rápida com Docker Compose](#execução-rápida-com-docker-compose).
 
 ## Limitações e próximos passos
 

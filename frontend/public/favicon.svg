@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Agendamento de exames</title>
+  <rect width="64" height="64" rx="15" fill="#0F766E"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24 14h-5a5 5 0 0 0-5 5v5"/>
+    <path d="M40 14h5a5 5 0 0 1 5 5v5"/>
+    <path d="M50 40v5a5 5 0 0 1-5 5h-5"/>
+    <path d="M24 50h-5a5 5 0 0 1-5-5v-5"/>
+    <path d="M24 32h16"/>
+  </g>
+</svg>
