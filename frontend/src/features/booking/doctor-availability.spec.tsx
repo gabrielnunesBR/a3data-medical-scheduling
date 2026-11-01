@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../../App';
+import { formatClinicDate } from './booking-dates';
 import { server } from '../../test/server';
 
 const doctors = [
@@ -394,4 +395,37 @@ describe('Doctor availability', () => {
       expect(attempts).toBe(2);
     },
   );
+
+  it('should clear the selected date and time when the clinic date advances', async () => {
+    // Mock Date only: keep timers real so user-event, React Query, and MSW work normally.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2030-01-07T02:59:58.000Z'));
+
+    try {
+      const user = await goToAvailability();
+
+      await user.selectOptions(screen.getByRole('combobox', { name: 'Profissional' }), '1');
+      await user.click(getAvailableCalendarDay());
+      await user.click(await screen.findByRole('button', { name: 'Selecionar horário 09:20' }));
+
+      const summary = screen.getByRole('complementary', { name: 'Seu agendamento' });
+      expect(within(summary).getByText(formatClinicDate('2030-01-06'))).toBeInTheDocument();
+      expect(within(summary).getByText('09:20')).toBeInTheDocument();
+
+      // The app remains mounted while the clinic moves from Jan 6 to Jan 7.
+      act(() => {
+        vi.setSystemTime(new Date('2030-01-07T03:00:02.000Z'));
+        window.dispatchEvent(new Event('focus'));
+      });
+
+      await waitFor(() => {
+        expect(within(summary).getByText('Não selecionados')).toBeInTheDocument();
+        expect(within(summary).queryByText('09:20')).not.toBeInTheDocument();
+      });
+      expect(screen.getByText('Escolha uma data para consultar os horários.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Revisar agendamento' })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

@@ -158,4 +158,24 @@ describe('AvailabilityService', () => {
       }),
     );
   });
+
+  it('should reuse a previously loaded exam without querying the exam repository again', async () => {
+    doctorsRepository.findOneBy.mockResolvedValue({ id: 1 });
+    shiftsRepository.find.mockResolvedValue([
+      {
+        weekday: 1,
+        startTime: '08:00:00',
+        endTime: '12:00:00',
+      },
+    ]);
+    appointmentsRepository.find.mockResolvedValue([]);
+
+    const exam = { id: 17, durationMinutes: 40 } as Exam;
+
+    const slots = await service.findAvailableSlots(1, exam, '2030-01-07');
+
+    expect(slots).toEqual(['08:00', '08:40', '09:20', '10:00', '10:40', '11:20']);
+    expect(examsRepository.findOneBy).not.toHaveBeenCalled();
+    expect(doctorsRepository.findOneBy).toHaveBeenCalledWith({ id: 1 });
+  });
 });

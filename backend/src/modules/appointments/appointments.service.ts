@@ -157,8 +157,8 @@ export class AppointmentsService {
     const endAt = end.toJSDate();
 
     const availableSlots = manager
-      ? await this.availabilityService.findAvailableSlots(dto.doctorId, dto.examId, date, manager)
-      : await this.availabilityService.findAvailableSlots(dto.doctorId, dto.examId, date);
+      ? await this.availabilityService.findAvailableSlots(dto.doctorId, exam, date, manager)
+      : await this.availabilityService.findAvailableSlots(dto.doctorId, exam, date);
 
     if (!availableSlots.includes(startTime)) {
       const hasConflict = await appointmentsRepository.existsBy({

@@ -29,7 +29,7 @@ export class AvailabilityService {
 
   async findAvailableSlots(
     doctorId: number,
-    examId: number,
+    examOrId: number | Exam,
     date: string,
     manager?: EntityManager,
   ): Promise<string[]> {
@@ -58,9 +58,11 @@ export class AvailabilityService {
       throw new NotFoundException('Doctor not found.');
     }
 
-    const exam = await examsRepository.findOneBy({
-      id: examId,
-    });
+    // Booking already loaded the exam; API queries still resolve it by ID.
+    const exam =
+      typeof examOrId === 'number'
+        ? await examsRepository.findOneBy({ id: examOrId })
+        : examOrId;
 
     if (!exam) {
       throw new NotFoundException('Exam not found.');

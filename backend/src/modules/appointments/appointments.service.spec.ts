@@ -143,7 +143,13 @@ describe('AppointmentsService', () => {
       }),
     );
 
-    expect(availabilityService.findAvailableSlots).toHaveBeenCalledWith(1, 17, '2030-01-07');
+    expect(availabilityService.findAvailableSlots).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ id: 17, durationMinutes: 40 }),
+      '2030-01-07',
+    );
+
+    expect(examsRepository.findOneBy).toHaveBeenCalledOnce();
 
     expect(appointmentsRepository.manager.transaction).not.toHaveBeenCalled();
   });
@@ -275,6 +281,13 @@ describe('AppointmentsService', () => {
     expect(appointmentsRepository.findOneBy).toHaveBeenCalledWith({
       idempotencyKey: key,
     });
+
+    expect(availabilityService.findAvailableSlots).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ id: 17, durationMinutes: 40 }),
+      '2030-01-07',
+      transactionManager,
+    );
 
     expect(appointmentsRepository.save).toHaveBeenCalledWith(
       expect.objectContaining({
