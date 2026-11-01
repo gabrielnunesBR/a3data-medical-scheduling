@@ -180,11 +180,11 @@
                 {
                   "key": "search",
                   "value": "{{examSearch}}",
-                  "description": "Texto opcional; até 100 caracteres"
+                  "description": "Texto opcional, até 100 caracteres; ignora maiúsculas/minúsculas e acentos"
                 }
               ]
             },
-            "description": "Pesquisa por nome (correspondência parcial, sem diferenciação de maiúsculas/minúsculas). Edite a variável examSearch."
+            "description": "Pesquisa parcial por nome, sem diferenciar maiúsculas/minúsculas ou acentos (ex.: cranio encontra Crânio). Edite a variável examSearch."
           },
           "response": [],
           "event": [
@@ -204,11 +204,12 @@
                   "    pm.expect(searchValue.trim()).not.to.equal('');",
                   "  });",
                   "  if (typeof searchValue === 'string' && searchValue.trim()) {",
-                  "    const term = searchValue.toLowerCase().trim();",
+                  "    const normalize = function (value) { return value.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLocaleLowerCase('pt-BR'); };",
+                  "    const term = normalize(searchValue.trim());",
                   "    pm.test('Returned exams match the search term', function () {",
                   "      pm.expect(exams).to.be.an('array');",
                   "      exams.forEach(function (exam) {",
-                  "        pm.expect(exam.name.toLowerCase()).to.include(term);",
+                  "        pm.expect(normalize(exam.name)).to.include(term);",
                   "      });",
                   "    });",
                   "  }",

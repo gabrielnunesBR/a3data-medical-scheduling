@@ -71,6 +71,46 @@ describe('Exam search', () => {
     ).not.toBeInTheDocument();
   });
 
+  it.each(['ressonancia', 'ReSsOnAnCiA', '  RESSOnÂnCIA  '])(
+    'should find exams with mixed case and optional accents: %s',
+    async (search) => {
+      const user = userEvent.setup();
+
+      renderApp();
+
+      await screen.findByRole('button', { name: /Raio-X de tórax/i });
+      await user.type(screen.getByRole('searchbox', { name: /Buscar exame pelo nome/i }), search);
+
+      expect(await screen.findByText('1 exame encontrado')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Ressonância magnética/i })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /Raio-X de tórax/i })).not.toBeInTheDocument();
+    },
+  );
+
+  it('should find exams whose names have accents when searching without accents', async () => {
+    const user = userEvent.setup();
+
+    renderApp();
+    await screen.findByRole('button', { name: /Ressonância magnética/i });
+    await user.type(screen.getByRole('searchbox', { name: /Buscar exame pelo nome/i }), 'TORAX');
+
+    expect(await screen.findByText('1 exame encontrado')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Raio-X de tórax/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /Ressonância magnética/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should treat percent and underscore as literal search characters', async () => {
+    const user = userEvent.setup();
+
+    renderApp();
+    await screen.findByRole('button', { name: /Ressonância magnética/i });
+    await user.type(screen.getByRole('searchbox', { name: /Buscar exame pelo nome/i }), '%');
+
+    expect(await screen.findByText('Nenhum exame encontrado')).toBeInTheDocument();
+  });
+
   it('should limit the search query to 100 characters', async () => {
     const user = userEvent.setup();
 

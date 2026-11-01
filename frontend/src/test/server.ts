@@ -19,12 +19,16 @@ const exams = [
   },
 ];
 
+function normalizeSearchText(value: string): string {
+  return value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR');
+}
+
 export const server = setupServer(
   http.get('*/api/exams', ({ request }) => {
-    const search =
-      new URL(request.url).searchParams.get('search')?.trim().toLocaleLowerCase('pt-BR') ?? '';
+    const search = new URL(request.url).searchParams.get('search')?.trim() ?? '';
+    const term = normalizeSearchText(search);
 
-    const result = exams.filter((exam) => exam.name.toLocaleLowerCase('pt-BR').includes(search));
+    const result = exams.filter((exam) => normalizeSearchText(exam.name).includes(term));
 
     return HttpResponse.json(result);
   }),

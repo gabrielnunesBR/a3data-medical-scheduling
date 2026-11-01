@@ -127,7 +127,7 @@ As capturas mostram a interface para o paciente e a documentação interativa da
 
 ## 3. Funcionalidades implementadas
 
-- Busca de exames por nome, com indicação da duração do procedimento.
+- Busca de exames por nome, ignorando maiúsculas, minúsculas e acentos, com indicação da duração do procedimento.
 - Listagem de médicos e consulta da disponibilidade por data e exame, com bloqueio de dias sem expediente no calendário.
 - Agendamento com nome do paciente, médico, exame e horário selecionado.
 - Validação de expediente, duração, horários passados e conflitos de reserva.
@@ -550,7 +550,7 @@ Com o PostgreSQL acessível, a API retorna `200 OK` e `{"status":"ok"}`. Se uma 
 curl "http://localhost:8080/api/exams?search=Resson%C3%A2ncia"
 ```
 
-O parâmetro `search` é opcional. Sem ele, a API retorna o catálogo de exames. Os registros são apresentados em ordem alfabética pelo nome; os IDs originais são preservados. A busca é feita por nome, com correspondência sem diferenciar maiúsculas de minúsculas, mas sem garantir remoção de acentos.
+O parâmetro `search` é opcional. Sem ele, a API retorna o catálogo de exames. Os registros são apresentados em ordem alfabética pelo nome; os IDs originais são preservados. A busca é parcial e ignora maiúsculas, minúsculas e acentos: por exemplo, `cranio`, `CRÂNIO` e `CrAnIo` encontram exames com “Crânio”. Os IDs originais e a ordenação por nome são preservados. Caracteres como `%` e `_` são tratados literalmente, não como curingas SQL. Para o catálogo fornecido de 30 exames, a API filtra os nomes normalizados em memória, sem dependência de extensões adicionais do PostgreSQL.
 
 ### Listar médicos
 

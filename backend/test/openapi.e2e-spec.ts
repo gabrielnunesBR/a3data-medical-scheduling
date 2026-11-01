@@ -88,6 +88,7 @@ describe('OpenAPI contract (e2e)', () => {
   it('should document the Zod query and path parameters', () => {
     const exams = getOperation('get', '/api/exams');
 
+    expect(exams.description).toContain('acentos');
     expect(exams.parameters).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

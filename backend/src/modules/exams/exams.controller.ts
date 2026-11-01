@@ -12,7 +12,8 @@ export class ExamsController {
   @Get()
   @ApiOperation({
     summary: 'Listar e pesquisar exames',
-    description: 'O parâmetro search é opcional. A resposta é ordenada pelo nome do exame.',
+    description:
+      'O parâmetro search é opcional. A busca parcial ignora maiúsculas, minúsculas e acentos. A resposta é ordenada pelo nome do exame.',
   })
   @ApiOkResponse({
     description: 'Catálogo de exames, eventualmente filtrado pelo nome.',

@@ -6,6 +6,12 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module.js';
 import { configureApp } from '../src/config/configure-app.js';
 
+type ExamResponse = { id: number; name: string; durationMinutes: number };
+
+function normalizeSearchText(value: string): string {
+  return value.normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('pt-BR');
+}
+
 describe('Exams API (e2e)', () => {
   let app: INestApplication;
 
@@ -30,19 +36,49 @@ describe('Exams API (e2e)', () => {
     expect(response.body).toHaveLength(30);
   });
 
-  it('should filter exams by name', async () => {
+  it.each([
+    ['RESSONÂNCIA', 'ressonancia'],
+    ['ressonancia', 'ressonancia'],
+    ['ReSsOnAnCiA', 'ressonancia'],
+    ['cranio', 'cranio'],
+    ['TORAX', 'torax'],
+    ['ossea', 'ossea'],
+    ['  cranio  ', 'cranio'],
+  ])('should search the seeded catalog ignoring case and accents: %s', async (search, term) => {
     const response = await request(app.getHttpServer())
       .get('/api/exams')
-      .query({ search: 'TOMOGRAFIA' })
+      .query({ search })
       .expect(200);
 
-    const exams = response.body as Array<{ name: string }>;
+    const exams = response.body as ExamResponse[];
 
     expect(exams.length).toBeGreaterThan(0);
 
     for (const exam of exams) {
-      expect(exam.name.toLowerCase()).toContain('tomografia');
+      expect(normalizeSearchText(exam.name)).toContain(term);
     }
+
+    // Filtering must preserve the same order and IDs returned by the unfiltered API.
+    const unfiltered = await request(app.getHttpServer()).get('/api/exams').expect(200);
+    const expected = (unfiltered.body as ExamResponse[]).filter((exam) =>
+      normalizeSearchText(exam.name).includes(term),
+    );
+
+    expect(exams).toEqual(expected);
+  });
+
+  it('should treat % and _ as literal search terms, not SQL wildcards', async () => {
+    await request(app.getHttpServer()).get('/api/exams').query({ search: '%' }).expect(200, []);
+    await request(app.getHttpServer()).get('/api/exams').query({ search: '_' }).expect(200, []);
+  });
+
+  it('should return the whole catalog when the search term is blank', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/exams')
+      .query({ search: '   ' })
+      .expect(200);
+
+    expect(response.body).toHaveLength(30);
   });
 
   it('should return an empty list when no exam matches', async () => {
