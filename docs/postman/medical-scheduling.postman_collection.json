@@ -234,7 +234,7 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "doctors"]
             },
-            "description": "Lista profissionais disponíveis para agendamento; cada item contém id, name e crm."
+            "description": "Lista profissionais disponíveis para agendamento; cada item contém id, name, crm e workingWeekdays (dias de atendimento de 1 = segunda-feira a 7 = domingo)."
           },
           "response": [],
           "event": [
@@ -248,12 +248,13 @@
                   "});",
                   "if (pm.response.code === 200) {",
                   "  const doctors = pm.response.json();",
-                  "  pm.test('Doctors include ID, name, and CRM', function () {",
+                  "  pm.test('Doctors include ID, name, CRM, and working weekdays', function () {",
                   "    pm.expect(doctors).to.be.an('array');",
                   "    doctors.forEach(function (doctor) {",
                   "      pm.expect(doctor.id).to.be.a('number');",
                   "      pm.expect(doctor.name).to.be.a('string');",
                   "      pm.expect(doctor.crm).to.be.a('string');",
+                  "      pm.expect(doctor.workingWeekdays).to.be.an('array');",
                   "    });",
                   "  });",
                   "}"
